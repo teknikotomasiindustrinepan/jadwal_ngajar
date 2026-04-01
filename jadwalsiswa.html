@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadwal Siswa - Teknik Otomasi Industri</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+        body {
+            background: #eef2f8;
+            padding: 30px 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            padding: 28px 32px;
+        }
+        h1 {
+            font-size: 1.7rem;
+            color: #1a4a6f;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        h1 small {
+            font-size: 0.75rem;
+            background: #e9f0f5;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-weight: normal;
+        }
+        .sub {
+            color: #5a6e7c;
+            margin-bottom: 28px;
+            border-left: 4px solid #2c7a4d;
+            padding-left: 16px;
+            font-size: 0.9rem;
+        }
+        .card {
+            background: #f9fbfd;
+            border-radius: 24px;
+            padding: 20px 24px;
+            margin-bottom: 28px;
+            border: 1px solid #e2edf2;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-end;
+            margin-bottom: 16px;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 180px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #2c6b4f;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 28px;
+            border: 1px solid #cfdfea;
+            background: white;
+            font-size: 0.85rem;
+        }
+        button {
+            background: #2c7a4d;
+            color: white;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: #1e5e3a;
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #2c7a4d;
+            color: #2c7a4d;
+        }
+        .btn-outline:hover {
+            background: #eef5ea;
+            transform: none;
+        }
+        .btn-secondary {
+            background: #3f6b8c;
+        }
+        .btn-secondary:hover {
+            background: #2f5570;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 20px;
+            border: 1px solid #e2edf2;
+            margin-top: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            min-width: 600px;
+        }
+        th {
+            background: #eef4fa;
+            padding: 12px 12px;
+            text-align: left;
+            font-weight: 700;
+            color: #1e4a6e;
+            border-bottom: 1px solid #d4e2ef;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ecf3f8;
+            vertical-align: middle;
+        }
+        select {
+            width: 100%;
+            padding: 6px 8px;
+            font-size: 0.8rem;
+            border-radius: 20px;
+            max-width: 130px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        select option {
+            white-space: normal;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #2c7a4d;
+            background: white;
+            border-radius: 24px;
+        }
+        .footer-note {
+            margin-top: 24px;
+            font-size: 0.7rem;
+            text-align: center;
+            color: #6c86a0;
+            background: #f6fafd;
+            padding: 12px;
+            border-radius: 24px;
+        }
+        .minggu-control {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .minggu-control input {
+            width: 80px;
+            text-align: center;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        @media (max-width: 700px) {
+            .container { padding: 18px; }
+            .form-row { flex-direction: column; }
+            .btn-group { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>
+        📅 Jadwal Per Siswa
+        <small>Teknik Otomasi Industri</small>
+    </h1>
+    <div class="sub">Menampilkan jadwal mingguan siswa untuk mata pelajaran dari kelompok <strong>"Produktif TOI"</strong></div>
+
+    <div id="authStatus" class="loading">⏳ Menghubungkan ke Firebase...</div>
+
+    <div id="mainContent" style="display: none;">
+        <!-- Pilih Kelas & Kontrol Minggu & Tombol CSV -->
+        <div class="card">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>📌 Pilih Kelas (hanya kelas dengan Produktif TOI)</label>
+                    <select id="kelasSelect">
+                        <option value="">-- Memuat kelas --</option>
+                    </select>
+                </div>
+                <div class="form-group minggu-control">
+                    <label>📅 Jumlah Minggu</label>
+                    <input type="number" id="mingguCount" min="1" max="20" value="11">
+                    <button id="ubahMingguBtn" class="btn-outline">Terapkan</button>
+                </div>
+                <div class="form-group btn-group">
+                    <label>&nbsp;</label>
+                    <button id="exportCsvBtn" class="btn-secondary">📤 Ekspor CSV</button>
+                    <button id="templateCsvBtn" class="btn-outline">📄 Template CSV</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabel Jadwal Siswa -->
+        <div class="table-wrapper">
+            <table id="jadwalTable">
+                <thead id="tableHeader">
+                    <tr>
+                        <th>Nama Siswa</th>
+                        <!-- kolom minggu akan diisi JS -->
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="2">Pilih kelas untuk menampilkan data</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="footer-note">
+            💡 <strong>Petunjuk:</strong> Pilih kelas yang memiliki mata pelajaran Produktif TOI. Untuk setiap siswa, pilih mapel dari daftar yang tersedia per minggu. Perubahan akan langsung disimpan. Singkatan mapel (maks 5 huruf) ditampilkan di dropdown untuk memudahkan pembacaan. Gunakan tombol Ekspor CSV untuk menyimpan data, dan Template CSV untuk format impor.
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, doc, getDocs, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDKR4e_9uHBhBqQEdxR7s2R807fawb7J8Y",
+        authDomain: "absensi-toi.firebaseapp.com",
+        projectId: "absensi-toi",
+        storageBucket: "absensi-toi.firebasestorage.app",
+        messagingSenderId: "1069310497322",
+        appId: "1:1069310497322:web:2705d66e041c41a1626953"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // DOM Elements
+    const authStatus = document.getElementById('authStatus');
+    const mainContent = document.getElementById('mainContent');
+    const kelasSelect = document.getElementById('kelasSelect');
+    const mingguCountInput = document.getElementById('mingguCount');
+    const ubahMingguBtn = document.getElementById('ubahMingguBtn');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+    const templateCsvBtn = document.getElementById('templateCsvBtn');
+    const tableHeader = document.getElementById('tableHeader');
+    const tableBody = document.getElementById('tableBody');
+
+    // Data global
+    let kelasValid = []; // [{ id, nama }]
+    let currentKelasId = null;
+    let currentJumlahMinggu = 11;
+    let daftarMapelTOI = []; // array of string (nama mapel unik)
+    let siswaList = []; // [{ id, nama, no }]
+    let jadwalSiswaMap = new Map(); // key: siswaId, value: object minggu { "1": mapel, ... }
+
+    // Helper: buat singkatan dari setiap kata (huruf kapital pertama tiap kata) -> maks 5 huruf
+    function getAbbreviation(mapel) {
+        if (!mapel) return '';
+        // Pisahkan berdasarkan spasi
+        const words = mapel.trim().split(/\s+/);
+        let initials = words.map(word => {
+            // Ambil huruf pertama (jika ada)
+            const firstChar = word.charAt(0);
+            return firstChar.toUpperCase();
+        }).join('');
+        // Potong maksimal 5 karakter
+        if (initials.length > 5) initials = initials.substring(0, 5);
+        return initials;
+    }
+
+    // ==================== AMBIL KELAS YANG MEMILIKI PRODUKTIF TOI ====================
+    async function loadKelasWithProduktifTOI() {
+        const kelasSnapshot = await getDocs(collection(db, "kelas"));
+        let kelasTemp = [];
+        kelasSnapshot.forEach(doc => {
+            kelasTemp.push({ id: doc.id, nama: doc.data().nama });
+        });
+        kelasTemp.sort((a, b) => a.nama.localeCompare(b.nama, 'id', { sensitivity: 'base' }));
+
+        const kelasValidTemp = [];
+        for (const kelas of kelasTemp) {
+            const jadwalRef = doc(db, "jadwal", kelas.id);
+            const jadwalSnap = await getDoc(jadwalRef);
+            let hasProduktif = false;
+            if (jadwalSnap.exists()) {
+                const schedule = jadwalSnap.data().schedule || {};
+                const hariList = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
+                for (let hari of hariList) {
+                    const daySchedule = schedule[hari];
+                    if (daySchedule) {
+                        for (let jp = 1; jp <= 10; jp++) {
+                            if (daySchedule[jp] === "Produktif TOI") {
+                                hasProduktif = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (hasProduktif) break;
+                }
+            }
+            if (hasProduktif) {
+                kelasValidTemp.push(kelas);
+            }
+        }
+        return kelasValidTemp;
+    }
+
+    // ==================== AMBIL DAFTAR MAPEL PRODUKTIF TOI DARI GURU ====================
+    async function loadMapelProduktifTOI() {
+        const guruSnapshot = await getDocs(collection(db, "guru"));
+        const mapelSet = new Set();
+        guruSnapshot.forEach(doc => {
+            const mapelList = doc.data().mapel || [];
+            mapelList.forEach(item => {
+                if (item.kelompok === "Produktif TOI" && item.mapel && item.mapel.trim() !== "") {
+                    mapelSet.add(item.mapel.trim());
+                }
+            });
+        });
+        return Array.from(mapelSet).sort((a, b) => a.localeCompare(b, 'id', { sensitivity: 'base' }));
+    }
+
+    // ==================== AMBIL SISWA DARI KELAS TERTENTU ====================
+    async function loadSiswaByKelas(kelasId) {
+        const siswaRef = collection(db, "kelas", kelasId, "siswa");
+        const siswaSnapshot = await getDocs(siswaRef);
+        let siswa = [];
+        siswaSnapshot.forEach(doc => {
+            siswa.push({
+                id: doc.id,
+                no: doc.data().no,
+                nama: doc.data().nama
+            });
+        });
+        siswa.sort((a, b) => a.no - b.no);
+        return siswa;
+    }
+
+    // ==================== AMBIL JADWAL SISWA ====================
+    async function loadJadwalSiswa(kelasId, siswaIdList) {
+        const jadwalMap = new Map();
+        for (const siswaId of siswaIdList) {
+            const jadwalRef = doc(db, "jadwalSiswa", siswaId);
+            const jadwalSnap = await getDoc(jadwalRef);
+            if (jadwalSnap.exists()) {
+                jadwalMap.set(siswaId, jadwalSnap.data().minggu || {});
+            } else {
+                jadwalMap.set(siswaId, {});
+            }
+        }
+        return jadwalMap;
+    }
+
+    // ==================== SIMPAN JADWAL SISWA ====================
+    async function simpanJadwalSiswa(siswaId, mingguKe, mapel) {
+        if (!siswaId) return;
+        const jadwalRef = doc(db, "jadwalSiswa", siswaId);
+        try {
+            const docSnap = await getDoc(jadwalRef);
+            let existing = {};
+            if (docSnap.exists()) {
+                existing = docSnap.data().minggu || {};
+            }
+            if (mapel === "") {
+                delete existing[mingguKe];
+            } else {
+                existing[mingguKe] = mapel;
+            }
+            await setDoc(jadwalRef, { minggu: existing, kelasId: currentKelasId }, { merge: true });
+        } catch (error) {
+            console.error("Gagal menyimpan jadwal siswa:", error);
+            alert("Gagal menyimpan perubahan. Periksa koneksi.");
+        }
+    }
+
+    // ==================== RENDER TABEL ====================
+    function renderTable() {
+        if (!currentKelasId || siswaList.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="2">Tidak ada siswa di kelas ini</td></tr>';
+            return;
+        }
+
+        // Build header
+        let headerHtml = '<tr><th>Nama Siswa</th>';
+        for (let i = 1; i <= currentJumlahMinggu; i++) {
+            headerHtml += `<th>Minggu ${i}</th>`;
+        }
+        headerHtml += '</tr>';
+        tableHeader.innerHTML = headerHtml;
+
+        // Build body
+        let bodyHtml = '';
+        for (const siswa of siswaList) {
+            const siswaId = siswa.id;
+            const mingguData = jadwalSiswaMap.get(siswaId) || {};
+            bodyHtml += `<tr data-siswa-id="${siswaId}">`;
+            bodyHtml += `<td>${escapeHtml(siswa.nama)}</td>`;
+            for (let i = 1; i <= currentJumlahMinggu; i++) {
+                const selectedMapel = mingguData[i] || '';
+                // Buat opsi dengan singkatan + nama lengkap
+                let options = '<option value="">-- Pilih --</option>';
+                daftarMapelTOI.forEach(mapel => {
+                    const abbr = getAbbreviation(mapel);
+                    const optionText = `${abbr} - ${mapel}`;
+                    const selected = (mapel === selectedMapel) ? 'selected' : '';
+                    options += `<option value="${escapeHtml(mapel)}" ${selected} title="${escapeHtml(mapel)}">${escapeHtml(optionText)}</option>`;
+                });
+                bodyHtml += `<td><select class="mapel-select" data-siswa-id="${siswaId}" data-minggu="${i}" style="max-width:130px; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(selectedMapel)}">${options}</select></td>`;
+            }
+            bodyHtml += '</tr>';
+        }
+        tableBody.innerHTML = bodyHtml;
+
+        // Attach event listener untuk setiap dropdown
+        document.querySelectorAll('.mapel-select').forEach(select => {
+            select.addEventListener('change', async (e) => {
+                const siswaId = select.getAttribute('data-siswa-id');
+                const minggu = parseInt(select.getAttribute('data-minggu'));
+                const mapel = select.value;
+                await simpanJadwalSiswa(siswaId, minggu, mapel);
+                // Update local map
+                if (!jadwalSiswaMap.has(siswaId)) jadwalSiswaMap.set(siswaId, {});
+                const current = jadwalSiswaMap.get(siswaId);
+                if (mapel === "") {
+                    delete current[minggu];
+                } else {
+                    current[minggu] = mapel;
+                }
+                jadwalSiswaMap.set(siswaId, current);
+                // Update title tooltip
+                select.setAttribute('title', mapel || '');
+            });
+        });
+    }
+
+    // ==================== MUAT DATA UNTUK KELAS ====================
+    async function loadDataForKelas(kelasId, jumlahMinggu) {
+        if (!kelasId) return;
+        currentKelasId = kelasId;
+        currentJumlahMinggu = jumlahMinggu;
+
+        tableBody.innerHTML = '<tr><td colspan="2">⏳ Memuat data siswa...</td></tr>';
+
+        try {
+            if (daftarMapelTOI.length === 0) {
+                daftarMapelTOI = await loadMapelProduktifTOI();
+            }
+
+            siswaList = await loadSiswaByKelas(kelasId);
+            if (siswaList.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="2">Belum ada siswa di kelas ini.</td></tr>';
+                return;
+            }
+
+            const siswaIds = siswaList.map(s => s.id);
+            jadwalSiswaMap = await loadJadwalSiswa(kelasId, siswaIds);
+
+            renderTable();
+        } catch (error) {
+            console.error("Error load data kelas:", error);
+            tableBody.innerHTML = '<tr><td colspan="2">Gagal memuat data. Periksa koneksi.</td></tr>';
+        }
+    }
+
+    // ==================== POPULATE DROPDOWN KELAS ====================
+    async function populateKelasSelect() {
+        kelasValid = await loadKelasWithProduktifTOI();
+        kelasSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+        if (kelasValid.length === 0) {
+            kelasSelect.innerHTML = '<option value="">Tidak ada kelas dengan Produktif TOI</option>';
+            tableBody.innerHTML = '<tr><td colspan="2">Tidak ada kelas yang memiliki kelompok Produktif TOI.</td></tr>';
+            return;
+        }
+        kelasValid.forEach(kelas => {
+            const option = document.createElement('option');
+            option.value = kelas.id;
+            option.textContent = kelas.nama;
+            kelasSelect.appendChild(option);
+        });
+        if (kelasValid.length > 0) {
+            kelasSelect.value = kelasValid[0].id;
+            await loadDataForKelas(kelasValid[0].id, currentJumlahMinggu);
+        }
+    }
+
+    // ==================== EKSPOR CSV ====================
+    function exportToCSV() {
+        if (!currentKelasId || siswaList.length === 0) {
+            alert("Tidak ada data untuk diekspor.");
+            return;
+        }
+        // Header
+        let headers = ['Nama Siswa'];
+        for (let i = 1; i <= currentJumlahMinggu; i++) {
+            headers.push(`Minggu ${i}`);
+        }
+        let csvRows = [headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',')];
+        
+        for (const siswa of siswaList) {
+            const mingguData = jadwalSiswaMap.get(siswa.id) || {};
+            const row = [siswa.nama];
+            for (let i = 1; i <= currentJumlahMinggu; i++) {
+                let mapel = mingguData[i] || '';
+                row.push(mapel);
+            }
+            csvRows.push(row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','));
+        }
+        
+        const blob = new Blob(["\uFEFF" + csvRows.join('\n')], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `jadwal_siswa_${kelasSelect.options[kelasSelect.selectedIndex]?.text || 'kelas'}_${currentJumlahMinggu}_minggu.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    // ==================== TEMPLATE CSV ====================
+    function downloadTemplate() {
+        let headers = ['Nama Siswa'];
+        for (let i = 1; i <= currentJumlahMinggu; i++) {
+            headers.push(`Minggu ${i}`);
+        }
+        const exampleRow = ['Contoh Siswa'];
+        for (let i = 1; i <= currentJumlahMinggu; i++) {
+            exampleRow.push('');
+        }
+        const csvRows = [
+            headers.map(h => `"${h.replace(/"/g, '""')}"`).join(','),
+            exampleRow.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+        ];
+        const blob = new Blob(["\uFEFF" + csvRows.join('\n')], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `template_jadwal_siswa_${currentJumlahMinggu}_minggu.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    // ==================== EVENT LISTENER ====================
+    kelasSelect.addEventListener('change', async (e) => {
+        const kelasId = e.target.value;
+        if (kelasId) {
+            await loadDataForKelas(kelasId, currentJumlahMinggu);
+        } else {
+            tableBody.innerHTML = '<tr><td colspan="2">Pilih kelas terlebih dahulu</td></tr>';
+        }
+    });
+
+    ubahMingguBtn.addEventListener('click', async () => {
+        let newMinggu = parseInt(mingguCountInput.value);
+        if (isNaN(newMinggu)) newMinggu = 11;
+        newMinggu = Math.min(20, Math.max(1, newMinggu));
+        mingguCountInput.value = newMinggu;
+        currentJumlahMinggu = newMinggu;
+        if (currentKelasId) {
+            await loadDataForKelas(currentKelasId, currentJumlahMinggu);
+        } else {
+            // Update header kosong
+            let headerHtml = '<tr><th>Nama Siswa</th>';
+            for (let i = 1; i <= currentJumlahMinggu; i++) {
+                headerHtml += `<th>Minggu ${i}</th>`;
+            }
+            headerHtml += '</tr>';
+            tableHeader.innerHTML = headerHtml;
+            tableBody.innerHTML = '<tr><td colspan="2">Pilih kelas terlebih dahulu</td></tr>';
+        }
+    });
+
+    exportCsvBtn.addEventListener('click', exportToCSV);
+    templateCsvBtn.addEventListener('click', downloadTemplate);
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // ==================== AUTH ====================
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            authStatus.style.display = 'none';
+            mainContent.style.display = 'block';
+            populateKelasSelect().catch(console.error);
+        } else {
+            authStatus.innerHTML = '🔄 Melakukan login anonim...';
+            signInAnonymously(auth).catch((error) => {
+                console.error("Gagal login anonim:", error);
+                authStatus.innerHTML = '❌ Gagal terhubung ke Firebase. Pastikan autentikasi anonim diaktifkan.';
+                authStatus.style.color = 'red';
+            });
+        }
+    });
+</script>
+</body>
+</html>
