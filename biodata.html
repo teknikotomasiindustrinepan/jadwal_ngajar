@@ -2,240 +2,8 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Manajemen Siswa - Teknik Otomasi Industri (Firebase)</title>
-    <!-- Firebase SDK modular (v9+) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, doc, getDocs, addDoc, setDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        
-        // Konfigurasi Firebase (dari user)
-        const firebaseConfig = {
-            apiKey: "AIzaSyDKR4e_9uHBhBqQEdxR7s2R807fawb7J8Y",
-            authDomain: "absensi-toi.firebaseapp.com",
-            projectId: "absensi-toi",
-            storageBucket: "absensi-toi.firebasestorage.app",
-            messagingSenderId: "1069310497322",
-            appId: "1:1069310497322:web:2705d66e041c41a1626953"
-        };
-        
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        
-        // DOM Elements
-        const kelasInput = document.getElementById('kelasInput');
-        const tambahKelasBtn = document.getElementById('tambahKelasBtn');
-        const kelasSelect = document.getElementById('kelasSelect');
-        const siswaTbody = document.getElementById('siswaTbody');
-        const importCsvBtn = document.getElementById('importCsvBtn');
-        const csvFileInput = document.getElementById('csvFileInput');
-        const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
-        
-        // ------------------ Fungsi CRUD Kelas ------------------
-        async function loadKelas() {
-            const kelasSnapshot = await getDocs(collection(db, "kelas"));
-            kelasSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>';
-            kelasSnapshot.forEach(doc => {
-                const kelasData = doc.data();
-                const option = document.createElement('option');
-                option.value = doc.id;
-                option.textContent = kelasData.nama;
-                kelasSelect.appendChild(option);
-            });
-            // Jika ada kelas, pilih pertama otomatis
-            if (kelasSnapshot.size > 0) {
-                kelasSelect.value = kelasSnapshot.docs[0].id;
-                loadSiswa(kelasSelect.value);
-            } else {
-                siswaTbody.innerHTML = '<tr><td colspan="3">Belum ada kelas. Silakan tambah kelas terlebih dahulu.</td></tr>';
-            }
-        }
-        
-        async function tambahKelas() {
-            const namaKelas = kelasInput.value.trim();
-            if (!namaKelas) {
-                alert("Nama kelas tidak boleh kosong!");
-                return;
-            }
-            try {
-                await addDoc(collection(db, "kelas"), { nama: namaKelas });
-                kelasInput.value = "";
-                loadKelas();
-                alert(`Kelas "${namaKelas}" berhasil ditambahkan!`);
-            } catch (error) {
-                console.error("Error menambah kelas: ", error);
-                alert("Gagal menambah kelas. Periksa koneksi atau izin Firebase.");
-            }
-        }
-        
-        // ------------------ Fungsi CRUD Siswa (subcollection) ------------------
-        async function loadSiswa(kelasId) {
-            if (!kelasId) {
-                siswaTbody.innerHTML = '<tr><td colspan="3">Pilih kelas terlebih dahulu.</td></tr>';
-                return;
-            }
-            try {
-                const siswaRef = collection(db, "kelas", kelasId, "siswa");
-                const siswaSnapshot = await getDocs(siswaRef);
-                if (siswaSnapshot.empty) {
-                    siswaTbody.innerHTML = '<tr><td colspan="3">Belum ada data siswa. Impor CSV atau tambah manual nanti.</td></tr>';
-                    return;
-                }
-                let html = '';
-                siswaSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    html += `
-                        <tr>
-                            <td>${data.no}</td>
-                            <td>${escapeHtml(data.nama)}</td>
-                            <td>
-                                <button class="btn-hapus-siswa" data-id="${doc.id}" data-kelas="${kelasId}">Hapus</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-                siswaTbody.innerHTML = html;
-                // Attach event untuk tombol hapus
-                document.querySelectorAll('.btn-hapus-siswa').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        const siswaId = btn.getAttribute('data-id');
-                        const kelas = btn.getAttribute('data-kelas');
-                        if (confirm("Hapus siswa ini?")) {
-                            await deleteDoc(doc(db, "kelas", kelas, "siswa", siswaId));
-                            loadSiswa(kelas);
-                        }
-                    });
-                });
-            } catch (error) {
-                console.error("Error load siswa: ", error);
-                siswaTbody.innerHTML = '<tr><td colspan="3">Gagal memuat data siswa.</td></tr>';
-            }
-        }
-        
-        // ------------------ Impor CSV ------------------
-        function parseCSV(csvText) {
-            // asumsi header: no,nama (case insensitive)
-            const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== "");
-            if (lines.length < 2) return [];
-            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-            const noIndex = headers.indexOf('no');
-            const namaIndex = headers.indexOf('nama');
-            if (noIndex === -1 || namaIndex === -1) {
-                alert("Format CSV harus memiliki kolom 'no' dan 'nama'. Silakan gunakan template yang disediakan.");
-                return [];
-            }
-            const siswaList = [];
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',').map(v => v.trim());
-                if (values.length <= noIndex || values.length <= namaIndex) continue;
-                const no = parseInt(values[noIndex]);
-                const nama = values[namaIndex];
-                if (!isNaN(no) && nama) {
-                    siswaList.push({ no, nama });
-                }
-            }
-            return siswaList;
-        }
-        
-        async function importCSVToKelas(kelasId, file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    const csvText = e.target.result;
-                    const siswaList = parseCSV(csvText);
-                    if (siswaList.length === 0) {
-                        reject("Tidak ada data valid dalam CSV.");
-                        return;
-                    }
-                    try {
-                        // Hapus semua siswa yang ada di kelas ini (opsional, sesuai keinginan)
-                        // Untuk menghindari duplikat, kita bisa hapus dulu atau tambahkan.
-                        // Lebih aman: hapus semua siswa lama, lalu impor baru.
-                        const siswaRef = collection(db, "kelas", kelasId, "siswa");
-                        const existing = await getDocs(siswaRef);
-                        const deletePromises = existing.docs.map(docSnap => deleteDoc(docSnap.ref));
-                        await Promise.all(deletePromises);
-                        
-                        // Tambahkan siswa baru
-                        for (const siswa of siswaList) {
-                            await addDoc(siswaRef, { no: siswa.no, nama: siswa.nama });
-                        }
-                        resolve(siswaList.length);
-                    } catch (error) {
-                        reject(error);
-                    }
-                };
-                reader.onerror = () => reject("Gagal membaca file.");
-                reader.readAsText(file, "UTF-8");
-            });
-        }
-        
-        // Event impor
-        importCsvBtn.addEventListener('click', () => {
-            const kelasId = kelasSelect.value;
-            if (!kelasId) {
-                alert("Pilih kelas terlebih dahulu!");
-                return;
-            }
-            const file = csvFileInput.files[0];
-            if (!file) {
-                alert("Pilih file CSV terlebih dahulu.");
-                return;
-            }
-            importCSVToKelas(kelasId, file)
-                .then(jumlah => {
-                    alert(`Berhasil mengimpor ${jumlah} siswa ke kelas ini.`);
-                    csvFileInput.value = ""; // reset input
-                    loadSiswa(kelasId);
-                })
-                .catch(err => {
-                    alert("Gagal impor: " + err);
-                });
-        });
-        
-        // ------------------ Download Template CSV ------------------
-        function downloadTemplate() {
-            const templateContent = "no,nama\n1,Contoh Siswa 1\n2,Contoh Siswa 2\n3,Contoh Siswa 3";
-            const blob = new Blob(["\uFEFF" + templateContent], { type: "text/csv;charset=utf-8;" });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.href = url;
-            link.download = "template_siswa.csv";
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }
-        
-        downloadTemplateBtn.addEventListener('click', downloadTemplate);
-        
-        // Event ketika ganti kelas
-        kelasSelect.addEventListener('change', (e) => {
-            const kelasId = e.target.value;
-            if (kelasId) loadSiswa(kelasId);
-            else siswaTbody.innerHTML = '<tr><td colspan="3">Pilih kelas untuk melihat siswa.</td></tr>';
-        });
-        
-        tambahKelasBtn.addEventListener('click', tambahKelas);
-        
-        // Helper escape HTML
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
-        
-        // Load awal
-        loadKelas();
-        
-        // Expose untuk debugging (opsional)
-        window.db = db;
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajemen Siswa - Teknik Otomasi Industri (Firebase + Auth)</title>
     <style>
         * {
             margin: 0;
@@ -374,6 +142,11 @@
             padding: 12px;
             border-radius: 24px;
         }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #2c7a4d;
+        }
         @media (max-width: 640px) {
             .container { padding: 18px; }
             .form-row { flex-direction: column; }
@@ -388,8 +161,10 @@
     </h1>
     <div class="sub">➕ Tambah kelas → Pilih kelas → Impor CSV siswa (template tersedia)</div>
 
+    <div id="authStatus" class="loading">⏳ Menghubungkan ke Firebase...</div>
+
     <!-- Bagian Tambah Kelas -->
-    <div class="card">
+    <div class="card" id="mainContent" style="display: none;">
         <div class="form-row">
             <div class="form-group">
                 <label>🏫 Nama Kelas Baru</label>
@@ -402,7 +177,7 @@
     </div>
 
     <!-- Bagian Pilih Kelas & Impor CSV -->
-    <div class="card">
+    <div class="card" id="mainContent2" style="display: none;">
         <div class="form-row">
             <div class="form-group">
                 <label>📌 Pilih Kelas</label>
@@ -443,5 +218,250 @@
         <span style="display: inline-block; margin-top: 10px;">⚡ Data disimpan di Firebase Firestore. Pastikan koneksi internet aktif.</span>
     </div>
 </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, doc, getDocs, addDoc, setDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    
+    // Konfigurasi Firebase (dari user)
+    const firebaseConfig = {
+        apiKey: "AIzaSyDKR4e_9uHBhBqQEdxR7s2R807fawb7J8Y",
+        authDomain: "absensi-toi.firebaseapp.com",
+        projectId: "absensi-toi",
+        storageBucket: "absensi-toi.firebasestorage.app",
+        messagingSenderId: "1069310497322",
+        appId: "1:1069310497322:web:2705d66e041c41a1626953"
+    };
+    
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    
+    // DOM Elements
+    const kelasInput = document.getElementById('kelasInput');
+    const tambahKelasBtn = document.getElementById('tambahKelasBtn');
+    const kelasSelect = document.getElementById('kelasSelect');
+    const siswaTbody = document.getElementById('siswaTbody');
+    const importCsvBtn = document.getElementById('importCsvBtn');
+    const csvFileInput = document.getElementById('csvFileInput');
+    const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+    const authStatus = document.getElementById('authStatus');
+    const mainContent = document.getElementById('mainContent');
+    const mainContent2 = document.getElementById('mainContent2');
+    
+    // ------------------ Fungsi CRUD Kelas ------------------
+    async function loadKelas() {
+        const kelasSnapshot = await getDocs(collection(db, "kelas"));
+        kelasSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+        kelasSnapshot.forEach(doc => {
+            const kelasData = doc.data();
+            const option = document.createElement('option');
+            option.value = doc.id;
+            option.textContent = kelasData.nama;
+            kelasSelect.appendChild(option);
+        });
+        // Jika ada kelas, pilih pertama otomatis
+        if (kelasSnapshot.size > 0) {
+            kelasSelect.value = kelasSnapshot.docs[0].id;
+            loadSiswa(kelasSelect.value);
+        } else {
+            siswaTbody.innerHTML = '<tr><td colspan="3">Belum ada kelas. Silakan tambah kelas terlebih dahulu.</td></tr>';
+        }
+    }
+    
+    async function tambahKelas() {
+        const namaKelas = kelasInput.value.trim();
+        if (!namaKelas) {
+            alert("Nama kelas tidak boleh kosong!");
+            return;
+        }
+        try {
+            await addDoc(collection(db, "kelas"), { nama: namaKelas });
+            kelasInput.value = "";
+            loadKelas();
+            alert(`Kelas "${namaKelas}" berhasil ditambahkan!`);
+        } catch (error) {
+            console.error("Error menambah kelas: ", error);
+            alert("Gagal menambah kelas. Periksa koneksi atau izin Firebase.");
+        }
+    }
+    
+    // ------------------ Fungsi CRUD Siswa (subcollection) ------------------
+    async function loadSiswa(kelasId) {
+        if (!kelasId) {
+            siswaTbody.innerHTML = '<tr><td colspan="3">Pilih kelas terlebih dahulu.</td></tr>';
+            return;
+        }
+        try {
+            const siswaRef = collection(db, "kelas", kelasId, "siswa");
+            const siswaSnapshot = await getDocs(siswaRef);
+            if (siswaSnapshot.empty) {
+                siswaTbody.innerHTML = '<tr><td colspan="3">Belum ada data siswa. Impor CSV atau tambah manual nanti.</td></tr>';
+                return;
+            }
+            let html = '';
+            siswaSnapshot.forEach(doc => {
+                const data = doc.data();
+                html += `
+                    <tr>
+                        <td>${data.no}</td>
+                        <td>${escapeHtml(data.nama)}</td>
+                        <td>
+                            <button class="btn-hapus-siswa" data-id="${doc.id}" data-kelas="${kelasId}">Hapus</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            siswaTbody.innerHTML = html;
+            // Attach event untuk tombol hapus
+            document.querySelectorAll('.btn-hapus-siswa').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const siswaId = btn.getAttribute('data-id');
+                    const kelas = btn.getAttribute('data-kelas');
+                    if (confirm("Hapus siswa ini?")) {
+                        await deleteDoc(doc(db, "kelas", kelas, "siswa", siswaId));
+                        loadSiswa(kelas);
+                    }
+                });
+            });
+        } catch (error) {
+            console.error("Error load siswa: ", error);
+            siswaTbody.innerHTML = '<tr><td colspan="3">Gagal memuat data siswa.</td></tr>';
+        }
+    }
+    
+    // ------------------ Impor CSV ------------------
+    function parseCSV(csvText) {
+        const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== "");
+        if (lines.length < 2) return [];
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const noIndex = headers.indexOf('no');
+        const namaIndex = headers.indexOf('nama');
+        if (noIndex === -1 || namaIndex === -1) {
+            alert("Format CSV harus memiliki kolom 'no' dan 'nama'. Silakan gunakan template yang disediakan.");
+            return [];
+        }
+        const siswaList = [];
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim());
+            if (values.length <= noIndex || values.length <= namaIndex) continue;
+            const no = parseInt(values[noIndex]);
+            const nama = values[namaIndex];
+            if (!isNaN(no) && nama) {
+                siswaList.push({ no, nama });
+            }
+        }
+        return siswaList;
+    }
+    
+    async function importCSVToKelas(kelasId, file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const csvText = e.target.result;
+                const siswaList = parseCSV(csvText);
+                if (siswaList.length === 0) {
+                    reject("Tidak ada data valid dalam CSV.");
+                    return;
+                }
+                try {
+                    // Hapus semua siswa yang ada di kelas ini
+                    const siswaRef = collection(db, "kelas", kelasId, "siswa");
+                    const existing = await getDocs(siswaRef);
+                    const deletePromises = existing.docs.map(docSnap => deleteDoc(docSnap.ref));
+                    await Promise.all(deletePromises);
+                    
+                    // Tambahkan siswa baru
+                    for (const siswa of siswaList) {
+                        await addDoc(siswaRef, { no: siswa.no, nama: siswa.nama });
+                    }
+                    resolve(siswaList.length);
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            reader.onerror = () => reject("Gagal membaca file.");
+            reader.readAsText(file, "UTF-8");
+        });
+    }
+    
+    // Event impor
+    importCsvBtn.addEventListener('click', () => {
+        const kelasId = kelasSelect.value;
+        if (!kelasId) {
+            alert("Pilih kelas terlebih dahulu!");
+            return;
+        }
+        const file = csvFileInput.files[0];
+        if (!file) {
+            alert("Pilih file CSV terlebih dahulu.");
+            return;
+        }
+        importCSVToKelas(kelasId, file)
+            .then(jumlah => {
+                alert(`Berhasil mengimpor ${jumlah} siswa ke kelas ini.`);
+                csvFileInput.value = "";
+                loadSiswa(kelasId);
+            })
+            .catch(err => {
+                alert("Gagal impor: " + err);
+            });
+    });
+    
+    // Download template CSV
+    function downloadTemplate() {
+        const templateContent = "no,nama\n1,Contoh Siswa 1\n2,Contoh Siswa 2\n3,Contoh Siswa 3";
+        const blob = new Blob(["\uFEFF" + templateContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = "template_siswa.csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+    downloadTemplateBtn.addEventListener('click', downloadTemplate);
+    
+    // Event ketika ganti kelas
+    kelasSelect.addEventListener('change', (e) => {
+        const kelasId = e.target.value;
+        if (kelasId) loadSiswa(kelasId);
+        else siswaTbody.innerHTML = '<tr><td colspan="3">Pilih kelas untuk melihat siswa.</td></tr>';
+    });
+    
+    tambahKelasBtn.addEventListener('click', tambahKelas);
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // ------------------ Autentikasi Anonim ------------------
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            // User sudah login (anonim)
+            authStatus.style.display = 'none';
+            mainContent.style.display = 'block';
+            mainContent2.style.display = 'block';
+            loadKelas();
+        } else {
+            // Belum login, lakukan signInAnonymously
+            authStatus.innerHTML = '🔄 Melakukan login anonim...';
+            signInAnonymously(auth).catch((error) => {
+                console.error("Gagal login anonim:", error);
+                authStatus.innerHTML = '❌ Gagal terhubung ke Firebase. Pastikan autentikasi anonim diaktifkan di Firebase Console.';
+                authStatus.style.color = 'red';
+            });
+        }
+    });
+</script>
 </body>
 </html>
