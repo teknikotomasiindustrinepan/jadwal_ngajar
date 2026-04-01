@@ -2,11 +2,9 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Login - Sistem Absensi Teaching Factory</title>
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
-    <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * {
@@ -229,17 +227,17 @@
 <!-- Firebase SDK -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Konfigurasi Firebase (dari user)
+    // Konfigurasi Firebase (terbaru)
     const firebaseConfig = {
-        apiKey: "AIzaSyDS7XlHJ_MIHNEVg2V5ooubG6jr06KmFsc",
-        authDomain: "jadwal-ngajar-794d1.firebaseapp.com",
-        projectId: "jadwal-ngajar-794d1",
-        storageBucket: "jadwal-ngajar-794d1.firebasestorage.app",
-        messagingSenderId: "677675428580",
-        appId: "1:677675428580:web:5aa74981dddd858d175af1"
+        apiKey: "AIzaSyAH1Gu9biLuCopu_PNlm9pKMHB2PBsmHk0",
+        authDomain: "jadwal-toi-1aa56.firebaseapp.com",
+        projectId: "jadwal-toi-1aa56",
+        storageBucket: "jadwal-toi-1aa56.firebasestorage.app",
+        messagingSenderId: "230279522919",
+        appId: "1:230279522919:web:18012ddce6f920050082c2"
     };
 
     // Initialize Firebase
@@ -255,7 +253,6 @@
     const errorDiv = document.getElementById('errorMessage');
     const loadingDiv = document.getElementById('loadingIndicator');
 
-    // Fungsi untuk menampilkan pesan error
     function showError(message) {
         errorDiv.textContent = message;
         errorDiv.style.display = 'block';
@@ -264,7 +261,6 @@
         }, 5000);
     }
 
-    // Fungsi untuk menampilkan loading
     function setLoading(loading) {
         if (loading) {
             loginBtn.disabled = true;
@@ -275,10 +271,8 @@
         }
     }
 
-    // Fungsi redirect berdasarkan role
     async function redirectUserByRole(user) {
         try {
-            // Ambil data user dari Firestore (collection "users" dengan doc ID = user.uid)
             const userDocRef = doc(db, "users", user.uid);
             const userDoc = await getDoc(userDocRef);
             
@@ -291,12 +285,10 @@
                 } else if (role === 'orangtua') {
                     window.location.href = 'orangtua/dashboard.html';
                 } else {
-                    // Role tidak dikenali
                     showError('Peran pengguna tidak valid. Hubungi administrator.');
                     await auth.signOut();
                 }
             } else {
-                // Jika dokumen user tidak ditemukan, mungkin akun belum memiliki role
                 showError('Akun belum terdaftar di sistem. Hubungi administrator.');
                 await auth.signOut();
             }
@@ -307,7 +299,6 @@
         }
     }
 
-    // Event login
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = emailInput.value.trim();
@@ -339,10 +330,9 @@
         }
     });
 
-    // Cek apakah sudah login sebelumnya
-    auth.onAuthStateChanged(async (user) => {
+    // Jika sudah login, langsung redirect
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
-            // Jika sudah login, langsung redirect
             await redirectUserByRole(user);
         }
     });
