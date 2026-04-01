@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistem Absensi Teaching Factory</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 460px;
+            padding: 40px 32px;
+            transition: transform 0.2s;
+        }
+
+        .login-container:hover {
+            transform: translateY(-4px);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .logo i {
+            font-size: 48px;
+            color: #4f46e5;
+            background: #eef2ff;
+            padding: 16px;
+            border-radius: 60px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 12px 16px;
+            transition: all 0.2s;
+            background: #f9fafb;
+        }
+
+        .input-group i {
+            color: #9ca3af;
+            margin-right: 12px;
+            font-size: 18px;
+        }
+
+        .input-group input {
+            border: none;
+            background: transparent;
+            width: 100%;
+            font-size: 15px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .input-group:focus-within {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+            background: white;
+        }
+
+        button {
+            width: 100%;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .register-link a {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            margin-top: 16px;
+            display: none;
+            text-align: center;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 16px;
+            font-size: 13px;
+            color: #4f46e5;
+        }
+
+        .footer-note {
+            margin-top: 32px;
+            text-align: center;
+            font-size: 12px;
+            color: #9ca3af;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <div class="logo">
+        <i class="fas fa-chalkboard-user"></i>
+    </div>
+    <h1>Absensi Teaching Factory</h1>
+    <div class="subtitle">Masuk ke sistem manajemen blok</div>
+
+    <form id="loginForm">
+        <div class="form-group">
+            <label>Email</label>
+            <div class="input-group">
+                <i class="fas fa-envelope"></i>
+                <input type="email" id="email" placeholder="contoh@sekolah.sch.id" required autocomplete="email">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <div class="input-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+            </div>
+        </div>
+        <button type="submit" id="loginBtn">
+            <i class="fas fa-sign-in-alt"></i> Masuk
+        </button>
+    </form>
+
+    <div class="register-link">
+        Belum punya akun? <a href="orangtua/registrasi.html">Daftar sebagai Orang Tua</a>
+    </div>
+
+    <div id="errorMessage" class="error-message"></div>
+    <div id="loadingIndicator" class="loading">
+        <i class="fas fa-spinner fa-spin"></i> Memproses...
+    </div>
+
+    <div class="footer-note">
+        <i class="fas fa-shield-alt"></i> Sistem aman menggunakan Firebase
+    </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Konfigurasi Firebase (dari user)
+    const firebaseConfig = {
+        apiKey: "AIzaSyDS7XlHJ_MIHNEVg2V5ooubG6jr06KmFsc",
+        authDomain: "jadwal-ngajar-794d1.firebaseapp.com",
+        projectId: "jadwal-ngajar-794d1",
+        storageBucket: "jadwal-ngajar-794d1.firebasestorage.app",
+        messagingSenderId: "677675428580",
+        appId: "1:677675428580:web:5aa74981dddd858d175af1"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // DOM elements
+    const loginForm = document.getElementById('loginForm');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const loginBtn = document.getElementById('loginBtn');
+    const errorDiv = document.getElementById('errorMessage');
+    const loadingDiv = document.getElementById('loadingIndicator');
+
+    // Fungsi untuk menampilkan pesan error
+    function showError(message) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        setTimeout(() => {
+            errorDiv.style.display = 'none';
+        }, 5000);
+    }
+
+    // Fungsi untuk menampilkan loading
+    function setLoading(loading) {
+        if (loading) {
+            loginBtn.disabled = true;
+            loadingDiv.style.display = 'block';
+        } else {
+            loginBtn.disabled = false;
+            loadingDiv.style.display = 'none';
+        }
+    }
+
+    // Fungsi redirect berdasarkan role
+    async function redirectUserByRole(user) {
+        try {
+            // Ambil data user dari Firestore (collection "users" dengan doc ID = user.uid)
+            const userDocRef = doc(db, "users", user.uid);
+            const userDoc = await getDoc(userDocRef);
+            
+            if (userDoc.exists()) {
+                const role = userDoc.data().role;
+                if (role === 'admin') {
+                    window.location.href = 'admin/dashboard.html';
+                } else if (role === 'guru') {
+                    window.location.href = 'guru/dashboard.html';
+                } else if (role === 'orangtua') {
+                    window.location.href = 'orangtua/dashboard.html';
+                } else {
+                    // Role tidak dikenali
+                    showError('Peran pengguna tidak valid. Hubungi administrator.');
+                    await auth.signOut();
+                }
+            } else {
+                // Jika dokumen user tidak ditemukan, mungkin akun belum memiliki role
+                showError('Akun belum terdaftar di sistem. Hubungi administrator.');
+                await auth.signOut();
+            }
+        } catch (error) {
+            console.error('Error fetching user role:', error);
+            showError('Gagal memuat data pengguna. Periksa koneksi atau hubungi admin.');
+            await auth.signOut();
+        }
+    }
+
+    // Event login
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+
+        if (!email || !password) {
+            showError('Email dan password harus diisi.');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            await redirectUserByRole(user);
+        } catch (error) {
+            console.error('Login error:', error);
+            let message = 'Login gagal. Periksa email dan password.';
+            if (error.code === 'auth/user-not-found') {
+                message = 'Email tidak terdaftar.';
+            } else if (error.code === 'auth/wrong-password') {
+                message = 'Password salah.';
+            } else if (error.code === 'auth/invalid-email') {
+                message = 'Format email tidak valid.';
+            }
+            showError(message);
+        } finally {
+            setLoading(false);
+        }
+    });
+
+    // Cek apakah sudah login sebelumnya
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            // Jika sudah login, langsung redirect
+            await redirectUserByRole(user);
+        }
+    });
+</script>
+</body>
+</html>
