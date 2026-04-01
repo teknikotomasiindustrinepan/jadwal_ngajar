@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadwal Kelas Produktif TOI - Teknik Otomasi Industri</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+        body {
+            background: #eef2f8;
+            padding: 30px 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.8rem;
+            color: #1a4a6f;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        h1 small {
+            font-size: 0.8rem;
+            background: #e9f0f5;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-weight: normal;
+        }
+        .sub {
+            color: #5a6e7c;
+            margin-bottom: 28px;
+            border-left: 4px solid #2c7a4d;
+            padding-left: 16px;
+            font-size: 0.9rem;
+        }
+        .loading, .no-data {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 24px;
+            margin: 20px 0;
+            color: #6c86a0;
+        }
+        .class-card {
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 32px;
+            overflow: hidden;
+            border: 1px solid #e2edf2;
+        }
+        .class-header {
+            background: linear-gradient(135deg, #1e5e3a, #2c7a4d);
+            color: white;
+            padding: 16px 24px;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            padding: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            min-width: 900px;
+        }
+        th, td {
+            border: 1px solid #d4e2ef;
+            padding: 10px 8px;
+            vertical-align: middle;
+        }
+        th {
+            background: #eef4fa;
+            font-weight: 700;
+            color: #1e4a6e;
+            text-align: center;
+        }
+        td:first-child {
+            background: #f4f9fe;
+            font-weight: 600;
+            text-align: center;
+            width: 90px;
+        }
+        .jam-cell {
+            background: #fef9e6;
+            font-size: 0.7rem;
+            white-space: nowrap;
+        }
+        .produktif-highlight {
+            background-color: #fff3cd;
+            font-weight: 600;
+            color: #856404;
+        }
+        .footer-note {
+            margin-top: 24px;
+            font-size: 0.7rem;
+            text-align: center;
+            color: #6c86a0;
+            background: #f6fafd;
+            padding: 12px;
+            border-radius: 24px;
+        }
+        @media (max-width: 700px) {
+            .container { padding: 0 10px; }
+            .class-header { font-size: 1.1rem; padding: 12px 16px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>
+        📅 Jadwal Kelas Produktif TOI
+        <small>Teknik Otomasi Industri</small>
+    </h1>
+    <div class="sub">Menampilkan jadwal hanya untuk kelas yang memiliki kelompok mapel <strong>"Produktif TOI"</strong> di salah satu jam pelajaran</div>
+
+    <div id="authStatus" class="loading">⏳ Menghubungkan ke Firebase...</div>
+    <div id="contentArea"></div>
+    <div class="footer-note">
+        💡 Catatan: Kelompok mapel "Produktif TOI" ditandai dengan latar belakang kuning pada sel yang bersangkutan. Hanya kelas dengan setidaknya satu JP berisi kelompok tersebut yang ditampilkan.
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, doc, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDKR4e_9uHBhBqQEdxR7s2R807fawb7J8Y",
+        authDomain: "absensi-toi.firebaseapp.com",
+        projectId: "absensi-toi",
+        storageBucket: "absensi-toi.firebasestorage.app",
+        messagingSenderId: "1069310497322",
+        appId: "1:1069310497322:web:2705d66e041c41a1626953"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const authStatus = document.getElementById('authStatus');
+    const contentArea = document.getElementById('contentArea');
+
+    // Waktu JP (sama dengan jadwal.html)
+    const jamList = [
+        "1<br>06:30-07:15",
+        "2<br>07:15-08:00",
+        "3<br>08:00-08:45",
+        "4<br>08:45-09:30",
+        "5<br>10:00-10:45",
+        "6<br>10:45-11:30",
+        "7<br>11:30-12:15",
+        "8<br>12:30-13:15",
+        "9<br>13:15-14:00",
+        "10<br>14:00-14:45"
+    ];
+    const hariList = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
+
+    // Kelompok yang dicari
+    const TARGET_GROUP = "Produktif TOI";
+
+    // Fungsi untuk mengecek apakah jadwal suatu kelas mengandung kelompok target
+    function hasProduktifTOI(schedule) {
+        if (!schedule) return false;
+        for (let hari of hariList) {
+            const daySchedule = schedule[hari];
+            if (!daySchedule) continue;
+            for (let jp = 1; jp <= 10; jp++) {
+                const val = daySchedule[jp];
+                if (val && val.trim() === TARGET_GROUP) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Render satu kelas dalam bentuk tabel
+    function renderClassTable(kelasNama, schedule) {
+        // Header tabel (JP + waktu)
+        let headerHtml = '<thead><tr><th>Hari / JP</th>';
+        for (let i = 0; i < jamList.length; i++) {
+            headerHtml += `<th class="jam-cell">${jamList[i]}</th>`;
+        }
+        headerHtml += '</tr></thead>';
+
+        // Body
+        let bodyHtml = '<tbody>';
+        for (let h = 0; h < hariList.length; h++) {
+            const hari = hariList[h];
+            bodyHtml += `<tr><td>${hari}</td>`;
+            for (let jp = 1; jp <= 10; jp++) {
+                const value = schedule[hari]?.[jp] || '';
+                const isTarget = (value === TARGET_GROUP);
+                const cellClass = isTarget ? 'produktif-highlight' : '';
+                bodyHtml += `<td class="${cellClass}">${escapeHtml(value)}</td>`;
+            }
+            bodyHtml += '</tr>';
+        }
+        bodyHtml += '</tbody>';
+
+        return `
+            <div class="class-card">
+                <div class="class-header">${escapeHtml(kelasNama)}</div>
+                <div class="table-wrapper">
+                    <table>${headerHtml}${bodyHtml}</table>
+                </div>
+            </div>
+        `;
+    }
+
+    async function loadAndDisplay() {
+        contentArea.innerHTML = '<div class="loading">📂 Memuat data kelas dan jadwal...</div>';
+        try {
+            // 1. Ambil semua kelas
+            const kelasSnapshot = await getDocs(collection(db, "kelas"));
+            if (kelasSnapshot.empty) {
+                contentArea.innerHTML = '<div class="no-data">Belum ada kelas yang terdaftar.</div>';
+                return;
+            }
+
+            // Kumpulkan data kelas
+            let kelasList = [];
+            kelasSnapshot.forEach(doc => {
+                kelasList.push({ id: doc.id, nama: doc.data().nama });
+            });
+            // Urutkan berdasarkan nama abjad
+            kelasList.sort((a, b) => a.nama.localeCompare(b.nama, 'id', { sensitivity: 'base' }));
+
+            // 2. Ambil jadwal setiap kelas dan filter
+            let validClasses = [];
+            for (let kelas of kelasList) {
+                const jadwalRef = doc(db, "jadwal", kelas.id);
+                const jadwalSnap = await getDoc(jadwalRef);
+                let schedule = {};
+                if (jadwalSnap.exists()) {
+                    schedule = jadwalSnap.data().schedule || {};
+                }
+                if (hasProduktifTOI(schedule)) {
+                    validClasses.push({ nama: kelas.nama, schedule });
+                }
+            }
+
+            if (validClasses.length === 0) {
+                contentArea.innerHTML = `<div class="no-data">⚠️ Tidak ditemukan kelas yang memiliki kelompok mapel "${TARGET_GROUP}" di jadwalnya.</div>`;
+                return;
+            }
+
+            // 3. Render setiap kelas
+            let html = '';
+            for (let cls of validClasses) {
+                html += renderClassTable(cls.nama, cls.schedule);
+            }
+            contentArea.innerHTML = html;
+
+        } catch (error) {
+            console.error("Error loading data:", error);
+            contentArea.innerHTML = '<div class="no-data">❌ Gagal memuat data. Periksa koneksi atau izin Firebase.</div>';
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // Autentikasi
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            authStatus.style.display = 'none';
+            loadAndDisplay();
+        } else {
+            authStatus.innerHTML = '🔄 Melakukan login anonim...';
+            signInAnonymously(auth).catch((error) => {
+                console.error("Gagal login anonim:", error);
+                authStatus.innerHTML = '❌ Gagal terhubung ke Firebase. Pastikan autentikasi anonim diaktifkan.';
+                authStatus.style.color = 'red';
+            });
+        }
+    });
+</script>
+</body>
+</html>
