@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadwal Pelajaran - Teknik Otomasi Industri</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+        body {
+            background: #eef2f8;
+            padding: 30px 20px;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            padding: 28px 32px;
+        }
+        h1 {
+            font-size: 1.7rem;
+            color: #1a4a6f;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        h1 small {
+            font-size: 0.75rem;
+            background: #e9f0f5;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-weight: normal;
+        }
+        .sub {
+            color: #5a6e7c;
+            margin-bottom: 28px;
+            border-left: 4px solid #2c7a4d;
+            padding-left: 16px;
+            font-size: 0.9rem;
+        }
+        .card {
+            background: #f9fbfd;
+            border-radius: 24px;
+            padding: 20px 24px;
+            margin-bottom: 28px;
+            border: 1px solid #e2edf2;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-end;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 180px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #2c6b4f;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+        select, button, input[type="file"] {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 28px;
+            border: 1px solid #cfdfea;
+            background: white;
+            font-size: 0.85rem;
+        }
+        button {
+            background: #2c7a4d;
+            color: white;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: #1e5e3a;
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #2c7a4d;
+            color: #2c7a4d;
+        }
+        .btn-outline:hover {
+            background: #eef5ea;
+            transform: none;
+        }
+        .btn-secondary {
+            background: #3f6b8c;
+        }
+        .btn-secondary:hover {
+            background: #2f5570;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 20px;
+            border: 1px solid #e2edf2;
+            margin-top: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            min-width: 900px;
+        }
+        th, td {
+            border: 1px solid #d4e2ef;
+            padding: 10px 8px;
+            vertical-align: middle;
+        }
+        th {
+            background: #eef4fa;
+            font-weight: 700;
+            color: #1e4a6e;
+            text-align: center;
+        }
+        td:first-child {
+            background: #f4f9fe;
+            font-weight: 600;
+            text-align: center;
+            width: 90px;
+        }
+        .jam-cell {
+            background: #fef9e6;
+            font-size: 0.7rem;
+            white-space: nowrap;
+        }
+        select.jadwal-select {
+            width: 100%;
+            padding: 8px 6px;
+            font-size: 0.8rem;
+            border: 1px solid #cbdde6;
+            border-radius: 16px;
+            background: white;
+            cursor: pointer;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #2c7a4d;
+        }
+        .footer-note {
+            margin-top: 24px;
+            font-size: 0.7rem;
+            text-align: center;
+            color: #6c86a0;
+            background: #f6fafd;
+            padding: 12px;
+            border-radius: 24px;
+        }
+        @media (max-width: 700px) {
+            .container { padding: 18px; }
+            .form-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>
+        📅 Jadwal Pelajaran
+        <small>Teknik Otomasi Industri</small>
+    </h1>
+    <div class="sub">Atur jadwal per kelas (Senin–Jumat, 10 JP per hari) — mata pelajaran dari dropdown</div>
+
+    <div id="authStatus" class="loading">⏳ Menghubungkan ke Firebase...</div>
+
+    <div id="mainContent" style="display: none;">
+        <!-- Pilih Kelas -->
+        <div class="card">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>🏫 Pilih Kelas</label>
+                    <select id="kelasSelect"></select>
+                </div>
+                <div class="form-group">
+                    <button id="loadJadwalBtn">📂 Muat Jadwal</button>
+                </div>
+                <div class="form-group">
+                    <button id="saveJadwalBtn">💾 Simpan Jadwal</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import/Export -->
+        <div class="card">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>📂 Impor CSV (jadwal)</label>
+                    <input type="file" id="csvFileInput" accept=".csv">
+                </div>
+                <div class="form-group">
+                    <button id="importCsvBtn">⬆️ Impor</button>
+                </div>
+                <div class="form-group">
+                    <button id="exportCsvBtn" class="btn-outline">📎 Ekspor CSV</button>
+                </div>
+                <div class="form-group">
+                    <button id="downloadTemplateBtn" class="btn-outline">📎 Download Template CSV</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabel Jadwal -->
+        <div class="card">
+            <div class="table-wrapper">
+                <table id="jadwalTable">
+                    <thead id="tableHeader">
+                        <!-- header akan diisi JS -->
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="12" class="loading">Pilih kelas dan klik "Muat Jadwal"</td>)</tr>
+                    </tbody>
+                 </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-note">
+        💡 <strong>Petunjuk:</strong><br>
+        • Pilih kelas, klik "Muat Jadwal" untuk menampilkan jadwal yang tersimpan.<br>
+        • Pilih mata pelajaran dari dropdown di setiap sel.<br>
+        • Klik "Simpan Jadwal" untuk menyimpan ke Firebase.<br>
+        • Impor CSV: format kolom: <code>Hari,JP1,JP2,...,JP10</code> (header wajib). Nama mapel harus sesuai dengan yang ada di dropdown.<br>
+        • Template CSV dapat diunduh dan diisi sesuai kebutuhan.
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, doc, getDocs, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDKR4e_9uHBhBqQEdxR7s2R807fawb7J8Y",
+        authDomain: "absensi-toi.firebaseapp.com",
+        projectId: "absensi-toi",
+        storageBucket: "absensi-toi.firebasestorage.app",
+        messagingSenderId: "1069310497322",
+        appId: "1:1069310497322:web:2705d66e041c41a1626953"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // DOM elements
+    const kelasSelect = document.getElementById('kelasSelect');
+    const loadJadwalBtn = document.getElementById('loadJadwalBtn');
+    const saveJadwalBtn = document.getElementById('saveJadwalBtn');
+    const importCsvBtn = document.getElementById('importCsvBtn');
+    const csvFileInput = document.getElementById('csvFileInput');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+    const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+    const authStatus = document.getElementById('authStatus');
+    const mainContent = document.getElementById('mainContent');
+    const tableHeader = document.getElementById('tableHeader');
+    const tableBody = document.getElementById('tableBody');
+
+    // Waktu JP
+    const jamList = [
+        "1<br>06:30-07:15",
+        "2<br>07:15-08:00",
+        "3<br>08:00-08:45",
+        "4<br>08:45-09:30",
+        "5<br>10:00-10:45",
+        "6<br>10:45-11:30",
+        "7<br>11:30-12:15",
+        "8<br>12:30-13:15",
+        "9<br>13:15-14:00",
+        "10<br>14:00-14:45"
+    ];
+    const hariList = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
+
+    // Data
+    let currentSchedule = {}; // { "Senin": { "1": "Matematika", ... }, ... }
+    let currentKelasId = "";
+    let mapelOptions = []; // array of unique mapel names
+
+    // ================== AMBIL DAFTAR MAPEL DARI GURU ==================
+    async function loadMapelList() {
+        try {
+            const guruSnapshot = await getDocs(collection(db, "guru"));
+            const mapelSet = new Set();
+            guruSnapshot.forEach(doc => {
+                const data = doc.data();
+                const mapelArray = data.mapel || [];
+                mapelArray.forEach(m => {
+                    if (m && m.trim()) mapelSet.add(m.trim());
+                });
+            });
+            mapelOptions = Array.from(mapelSet).sort((a,b) => a.localeCompare(b, 'id'));
+            if (mapelOptions.length === 0) {
+                console.warn("Belum ada mata pelajaran di database guru.");
+            }
+        } catch (error) {
+            console.error("Error loading mapel:", error);
+            mapelOptions = [];
+        }
+    }
+
+    // ================== LOAD DAFTAR KELAS ==================
+    async function loadKelas() {
+        const kelasSnapshot = await getDocs(collection(db, "kelas"));
+        kelasSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+        kelasSnapshot.forEach(doc => {
+            const kelasData = doc.data();
+            const option = document.createElement('option');
+            option.value = doc.id;
+            option.textContent = kelasData.nama;
+            kelasSelect.appendChild(option);
+        });
+        if (kelasSnapshot.size > 0) {
+            kelasSelect.value = kelasSnapshot.docs[0].id;
+            currentKelasId = kelasSelect.value;
+            loadJadwal(currentKelasId);
+        } else {
+            tableBody.innerHTML = '的人<td colspan="12" class="loading">Belum ada kelas. Buat kelas di halaman biodata terlebih dahulu.</td> </tr>';
+        }
+    }
+
+    // ================== LOAD JADWAL DARI FIRESTORE ==================
+    async function loadJadwal(kelasId) {
+        if (!kelasId) return;
+        try {
+            const docRef = doc(db, "jadwal", kelasId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                currentSchedule = docSnap.data().schedule || {};
+            } else {
+                currentSchedule = {};
+            }
+            renderTable();
+        } catch (error) {
+            console.error("Error load jadwal:", error);
+            tableBody.innerHTML = '<tr><td colspan="12" class="loading">Gagal memuat jadwal.</td></tr>';
+        }
+    }
+
+    // ================== RENDER TABEL JADWAL DENGAN DROPDOWN ==================
+    function renderTable() {
+        // Header
+        let headerHtml = '<tr><th>Hari / JP</th>';
+        for (let i = 0; i < jamList.length; i++) {
+            headerHtml += `<th class="jam-cell">${jamList[i]}</th>`;
+        }
+        headerHtml += '</tr>';
+        tableHeader.innerHTML = headerHtml;
+
+        // Buat opsi dropdown
+        let optionsHtml = '<option value="">-- Pilih --</option>';
+        mapelOptions.forEach(m => {
+            optionsHtml += `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`;
+        });
+
+        // Body
+        let bodyHtml = '';
+        for (let h = 0; h < hariList.length; h++) {
+            const hari = hariList[h];
+            bodyHtml += `<tr><td>${hari}</td>`;
+            for (let jp = 1; jp <= 10; jp++) {
+                const selectedMapel = currentSchedule[hari]?.[jp] || '';
+                bodyHtml += `
+                    <td>
+                        <select class="jadwal-select" data-hari="${hari}" data-jp="${jp}">
+                            ${optionsHtml}
+                            ${selectedMapel ? `<option value="${escapeHtml(selectedMapel)}" selected>${escapeHtml(selectedMapel)}</option>` : ''}
+                        </select>
+                    </td>
+                `;
+            }
+            bodyHtml += '</tr>';
+        }
+        tableBody.innerHTML = bodyHtml;
+
+        // Event listener untuk update currentSchedule saat dropdown berubah
+        document.querySelectorAll('.jadwal-select').forEach(select => {
+            select.addEventListener('change', (e) => {
+                const hari = select.getAttribute('data-hari');
+                const jp = parseInt(select.getAttribute('data-jp'));
+                const value = select.value.trim();
+                if (!currentSchedule[hari]) currentSchedule[hari] = {};
+                if (value === '') {
+                    delete currentSchedule[hari][jp];
+                    if (Object.keys(currentSchedule[hari]).length === 0) delete currentSchedule[hari];
+                } else {
+                    currentSchedule[hari][jp] = value;
+                }
+            });
+        });
+    }
+
+    // ================== SIMPAN KE FIRESTORE ==================
+    async function saveJadwal() {
+        if (!currentKelasId) {
+            alert("Pilih kelas terlebih dahulu!");
+            return;
+        }
+        // Kumpulkan data terbaru dari dropdown
+        const selects = document.querySelectorAll('.jadwal-select');
+        const newSchedule = {};
+        selects.forEach(select => {
+            const hari = select.getAttribute('data-hari');
+            const jp = parseInt(select.getAttribute('data-jp'));
+            const value = select.value.trim();
+            if (value) {
+                if (!newSchedule[hari]) newSchedule[hari] = {};
+                newSchedule[hari][jp] = value;
+            }
+        });
+        currentSchedule = newSchedule;
+
+        try {
+            const docRef = doc(db, "jadwal", currentKelasId);
+            await setDoc(docRef, { schedule: currentSchedule }, { merge: true });
+            alert("Jadwal berhasil disimpan!");
+        } catch (error) {
+            console.error("Error saving:", error);
+            alert("Gagal menyimpan jadwal.");
+        }
+    }
+
+    // ================== EKSPOR CSV ==================
+    function exportToCSV() {
+        if (!currentKelasId) {
+            alert("Pilih kelas terlebih dahulu!");
+            return;
+        }
+        // Header: Hari, JP1, JP2, ..., JP10
+        let rows = [["Hari", ...Array.from({length:10}, (_,i)=>`JP${i+1}`)]];
+        for (let h = 0; h < hariList.length; h++) {
+            const hari = hariList[h];
+            const row = [hari];
+            for (let jp = 1; jp <= 10; jp++) {
+                const mapel = currentSchedule[hari]?.[jp] || '';
+                row.push(mapel);
+            }
+            rows.push(row);
+        }
+        // Konversi ke CSV (dengan kutip jika ada koma)
+        const csvContent = rows.map(row => 
+            row.map(cell => {
+                if (cell.includes(',') || cell.includes('"')) {
+                    return `"${cell.replace(/"/g, '""')}"`;
+                }
+                return cell;
+            }).join(',')
+        ).join('\n');
+        
+        const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `jadwal_${currentKelasId}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    // ================== IMPOR CSV ==================
+    function parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                if (inQuotes && line[i+1] === '"') {
+                    current += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                result.push(current);
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        result.push(current);
+        return result.map(field => field.trim());
+    }
+
+    function parseCSV(csvText) {
+        const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== "");
+        if (lines.length < 2) return [];
+        const header = parseCSVLine(lines[0]);
+        const hariIndex = header.findIndex(h => h.toLowerCase() === 'hari');
+        if (hariIndex === -1) {
+            alert("CSV harus memiliki kolom 'Hari'.");
+            return [];
+        }
+        const jpIndices = [];
+        for (let i = 1; i <= 10; i++) {
+            const idx = header.findIndex(h => h.toLowerCase() === `jp${i}`);
+            jpIndices.push(idx !== -1 ? idx : -1);
+        }
+        const schedule = {};
+        for (let i = 1; i < lines.length; i++) {
+            const fields = parseCSVLine(lines[i]);
+            if (fields.length <= hariIndex) continue;
+            const hari = fields[hariIndex];
+            if (!hari || !hariList.includes(hari)) continue;
+            schedule[hari] = {};
+            for (let jp = 1; jp <= 10; jp++) {
+                const idx = jpIndices[jp-1];
+                if (idx !== -1 && fields.length > idx && fields[idx]) {
+                    schedule[hari][jp] = fields[idx];
+                }
+            }
+        }
+        return schedule;
+    }
+
+    async function importCSV(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const csvText = e.target.result;
+                const schedule = parseCSV(csvText);
+                if (Object.keys(schedule).length === 0) {
+                    reject("Tidak ada data valid dalam CSV.");
+                    return;
+                }
+                currentSchedule = schedule;
+                renderTable();
+                resolve(Object.keys(schedule).length);
+            };
+            reader.onerror = () => reject("Gagal membaca file.");
+            reader.readAsText(file, "UTF-8");
+        });
+    }
+
+    importCsvBtn.addEventListener('click', () => {
+        const file = csvFileInput.files[0];
+        if (!file) {
+            alert("Pilih file CSV terlebih dahulu.");
+            return;
+        }
+        importCSV(file)
+            .then(jumlahHari => {
+                alert(`Berhasil mengimpor data untuk ${jumlahHari} hari. Klik "Simpan Jadwal" untuk menyimpan ke Firebase.`);
+                csvFileInput.value = "";
+            })
+            .catch(err => alert("Gagal impor: " + err));
+    });
+
+    // ================== DOWNLOAD TEMPLATE ==================
+    function downloadTemplate() {
+        const templateRows = [
+            ["Hari", "JP1", "JP2", "JP3", "JP4", "JP5", "JP6", "JP7", "JP8", "JP9", "JP10"],
+            ["Senin", "Matematika", "Bahasa Indonesia", "Fisika", "Kimia", "Olahraga", "Produktif", "Produktif", "Produktif", "Bimbingan", "Ibadah"],
+            ["Selasa", "Bahasa Inggris", "Sejarah", "PKN", "Matematika", "Fisika", "Produktif", "Produktif", "Produktif", "Bimbingan", "Ibadah"],
+            ["Rabu", "Kimia", "Produktif", "Produktif", "Produktif", "Bahasa Indonesia", "Matematika", "Fisika", "Olahraga", "Bimbingan", "Ibadah"],
+            ["Kamis", "Produktif", "Produktif", "Produktif", "Bahasa Inggris", "Matematika", "Kimia", "Fisika", "PKN", "Bimbingan", "Ibadah"],
+            ["Jumat", "Produktif", "Produktif", "Produktif", "Agama", "Bahasa Indonesia", "Matematika", "Fisika", "Bimbingan", "Kegiatan", "Kegiatan"]
+        ];
+        const csvContent = templateRows.map(row => 
+            row.map(cell => {
+                if (cell.includes(',') || cell.includes('"')) {
+                    return `"${cell.replace(/"/g, '""')}"`;
+                }
+                return cell;
+            }).join(',')
+        ).join('\n');
+        const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = "template_jadwal.csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    downloadTemplateBtn.addEventListener('click', downloadTemplate);
+    exportCsvBtn.addEventListener('click', exportToCSV);
+    saveJadwalBtn.addEventListener('click', saveJadwal);
+    loadJadwalBtn.addEventListener('click', () => {
+        const kelasId = kelasSelect.value;
+        if (!kelasId) {
+            alert("Pilih kelas terlebih dahulu!");
+            return;
+        }
+        currentKelasId = kelasId;
+        loadJadwal(kelasId);
+    });
+    kelasSelect.addEventListener('change', () => {
+        currentKelasId = kelasSelect.value;
+        if (currentKelasId) loadJadwal(currentKelasId);
+        else tableBody.innerHTML = '<tr><td colspan="12" class="loading">Pilih kelas untuk melihat jadwal</td></tr>';
+    });
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // Autentikasi + Load Data
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            authStatus.style.display = 'none';
+            mainContent.style.display = 'block';
+            await loadMapelList(); // Ambil daftar mapel dari guru
+            loadKelas();
+        } else {
+            authStatus.innerHTML = '🔄 Melakukan login anonim...';
+            signInAnonymously(auth).catch((error) => {
+                console.error("Gagal login anonim:", error);
+                authStatus.innerHTML = '❌ Gagal terhubung ke Firebase. Pastikan autentikasi anonim diaktifkan.';
+                authStatus.style.color = 'red';
+            });
+        }
+    });
+</script>
+</body>
+</html>
