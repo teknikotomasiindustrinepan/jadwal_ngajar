@@ -97,10 +97,10 @@
             font-size: 0.7rem;
             white-space: nowrap;
         }
-        .produktif-highlight {
-            background-color: #fff3cd;
-            font-weight: 600;
-            color: #856404;
+        /* Efek hover untuk memudahkan pembacaan */
+        td:hover {
+            filter: brightness(0.97);
+            cursor: default;
         }
         .footer-note {
             margin-top: 24px;
@@ -128,7 +128,7 @@
     <div id="authStatus" class="loading">⏳ Menghubungkan ke Firebase...</div>
     <div id="contentArea"></div>
     <div class="footer-note">
-        💡 Catatan: Kelompok mapel "Produktif TOI" ditandai dengan latar belakang kuning pada sel yang bersangkutan. Hanya kelas dengan setidaknya satu JP berisi kelompok tersebut yang ditampilkan.
+        💡 Catatan: Setiap kelompok mapel memiliki warna latar yang berbeda untuk memudahkan identifikasi. Kelompok mapel yang sama akan memiliki warna yang konsisten di seluruh tampilan.
     </div>
 </div>
 
@@ -168,8 +168,31 @@
     ];
     const hariList = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 
-    // Kelompok yang dicari
+    // Kelompok yang dicari untuk filter kelas
     const TARGET_GROUP = "Produktif TOI";
+
+    // ------------------- FITUR WARNA UNTUK KELOMPOK MAPEL -------------------
+    // Palet warna pastel yang nyaman dilihat
+    const COLOR_PALETTE = [
+        '#FFF3CD', '#D9EAD3', '#FCE5CD', '#D0E0E3', '#F4CCCC',
+        '#C9DAF8', '#FCE5F1', '#E6D5B8', '#D5E8D4', '#F8CECC',
+        '#FFE6CC', '#CCE5FF', '#E1D5E7', '#FFD966', '#B6D7A8',
+        '#F9CB9C', '#9FC5E8', '#EAD1DC', '#F1C232', '#93C47D'
+    ];
+    const groupColorMap = new Map();  // menyimpan nama kelompok -> warna
+    let colorIndex = 0;
+
+    function getColorForGroup(groupName) {
+        if (!groupName) return null;
+        if (groupColorMap.has(groupName)) {
+            return groupColorMap.get(groupName);
+        }
+        const color = COLOR_PALETTE[colorIndex % COLOR_PALETTE.length];
+        groupColorMap.set(groupName, color);
+        colorIndex++;
+        return color;
+    }
+    // -----------------------------------------------------------------------
 
     // Fungsi untuk mengecek apakah jadwal suatu kelas mengandung kelompok target
     function hasProduktifTOI(schedule) {
@@ -187,7 +210,7 @@
         return false;
     }
 
-    // Render satu kelas dalam bentuk tabel
+    // Render satu kelas dalam bentuk tabel (dengan warna kelompok mapel)
     function renderClassTable(kelasNama, schedule) {
         // Header tabel (JP + waktu)
         let headerHtml = '<thead><tr><th>Hari / JP</th>';
@@ -203,9 +226,10 @@
             bodyHtml += `<tr><td>${hari}</td>`;
             for (let jp = 1; jp <= 10; jp++) {
                 const value = schedule[hari]?.[jp] || '';
-                const isTarget = (value === TARGET_GROUP);
-                const cellClass = isTarget ? 'produktif-highlight' : '';
-                bodyHtml += `<td class="${cellClass}">${escapeHtml(value)}</td>`;
+                // Tentukan warna latar belakang jika ada isi
+                const bgColor = value ? getColorForGroup(value) : null;
+                const styleAttr = bgColor ? ` style="background-color: ${bgColor};"` : '';
+                bodyHtml += `<td${styleAttr}>${escapeHtml(value)}</td>`;
             }
             bodyHtml += '</tr>';
         }
