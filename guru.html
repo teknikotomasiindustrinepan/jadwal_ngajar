@@ -225,7 +225,7 @@
             <div class="table-wrapper">
                 <table id="guruTable">
                     <thead>
-                        <tr><th>No</th><th>Nama Guru</th><th>Mata Pelajaran</th><th>Aksi</th></tr>
+                        <tr><th>No</th><th>Nama Guru</th><th>Mata Pelajaran</th><th>Aksi</th>inea
                     </thead>
                     <tbody id="guruTbody">
                         <tr><td colspan="4">Memuat data guru...</td></tr>
@@ -238,7 +238,7 @@
     <div class="footer-note">
         💡 <strong>Petunjuk:</strong><br>
         • Tambah guru: isi nama dan mapel (pisahkan dengan koma jika lebih dari satu).<br>
-        • Impor CSV: gunakan template dengan kolom <code>nama</code> dan <code>mapel</code> (mapel bisa berisi beberapa mapel dipisah koma).<br>
+        • Impor CSV: gunakan template yang disediakan. Format CSV mendukung kutip untuk menangani koma di dalam nilai. Contoh: <code>"Irffan Saktiansyah, S.T","Sistem Kontrol Elektromekanik"</code><br>
         • Data otomatis diurutkan berdasarkan nama (A-Z) dan diberi nomor urut.<br>
         • Edit mapel: klik tombol "Edit Mapel" untuk mengubah daftar mapel guru.<br>
         • Hapus guru akan menghapus data secara permanen.
@@ -283,7 +283,6 @@
         snapshot.forEach(docSnap => {
             guruList.push({ id: docSnap.id, nama: docSnap.data().nama });
         });
-        // Urutkan berdasarkan nama
         guruList.sort((a, b) => a.nama.localeCompare(b.nama, 'id', { sensitivity: 'base' }));
         
         const batch = writeBatch(db);
@@ -293,7 +292,6 @@
             batch.update(guruDocRef, { no: newNo });
         }
         await batch.commit();
-        console.log("Sort & renumber guru selesai");
     }
     
     // Load dan tampilkan semua guru
@@ -314,7 +312,6 @@
                     mapel: docSnap.data().mapel || []
                 });
             });
-            // Urutkan berdasarkan no (yang sudah sesuai urutan abjad)
             guruList.sort((a, b) => a.no - b.no);
             
             let html = '';
@@ -334,7 +331,6 @@
             });
             guruTbody.innerHTML = html;
             
-            // Event edit mapel
             document.querySelectorAll('.btn-edit-mapel').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const guruId = btn.getAttribute('data-id');
@@ -347,7 +343,6 @@
                 });
             });
             
-            // Event hapus guru
             document.querySelectorAll('.btn-hapus-guru').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const guruId = btn.getAttribute('data-id');
@@ -368,7 +363,7 @@
         try {
             const guruRef = doc(db, "guru", guruId);
             await updateDoc(guruRef, { mapel: mapelArray });
-            loadGuru(); // refresh
+            loadGuru();
         } catch (error) {
             console.error("Error update mapel: ", error);
             alert("Gagal mengupdate mapel.");
@@ -391,7 +386,7 @@
             await addDoc(collection(db, "guru"), {
                 nama: nama,
                 mapel: mapelArray,
-                no: 9999 // sementara, nanti di-renumber
+                no: 9999
             });
             await sortAndRenumberGuru();
             namaGuruInput.value = '';
@@ -404,26 +399,53 @@
         }
     }
     
-    // Impor CSV
+    // ---------- CSV Parser dengan dukungan kutip ----------
+    function parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                if (inQuotes && line[i+1] === '"') {
+                    // double quote escape
+                    current += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                result.push(current);
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        result.push(current);
+        // trim spasi di sekitar nilai (opsional)
+        return result.map(field => field.trim());
+    }
+    
     function parseCSV(csvText) {
         const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== "");
         if (lines.length < 2) return [];
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-        const namaIndex = headers.indexOf('nama');
-        const mapelIndex = headers.indexOf('mapel');
+        // ambil header
+        const header = parseCSVLine(lines[0]);
+        const namaIndex = header.findIndex(h => h.toLowerCase() === 'nama');
+        const mapelIndex = header.findIndex(h => h.toLowerCase() === 'mapel');
         if (namaIndex === -1) {
             alert("CSV harus memiliki kolom 'nama'. Kolom 'mapel' opsional.");
             return [];
         }
         const guruList = [];
         for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',').map(v => v.trim());
-            if (values.length <= namaIndex) continue;
-            const nama = values[namaIndex];
+            const fields = parseCSVLine(lines[i]);
+            if (fields.length <= namaIndex) continue;
+            const nama = fields[namaIndex];
             if (!nama) continue;
             let mapelArray = [];
-            if (mapelIndex !== -1 && values.length > mapelIndex && values[mapelIndex]) {
-                mapelArray = values[mapelIndex].split(',').map(m => m.trim()).filter(m => m);
+            if (mapelIndex !== -1 && fields.length > mapelIndex && fields[mapelIndex]) {
+                mapelArray = fields[mapelIndex].split(',').map(m => m.trim()).filter(m => m);
             }
             guruList.push({ nama, mapel: mapelArray });
         }
@@ -441,13 +463,11 @@
                     return;
                 }
                 try {
-                    // Hapus semua guru yang ada
                     const guruRef = collection(db, "guru");
                     const existing = await getDocs(guruRef);
                     const deletePromises = existing.docs.map(docSnap => deleteDoc(docSnap.ref));
                     await Promise.all(deletePromises);
                     
-                    // Tambah guru baru
                     for (const guru of guruList) {
                         await addDoc(guruRef, {
                             nama: guru.nama,
@@ -483,9 +503,12 @@
             });
     });
     
-    // Download template CSV
+    // Download template CSV dengan kutip untuk menangani koma
     function downloadTemplate() {
-        const templateContent = "nama,mapel\nAsep Bangbang Purnawan, S.T,Sistem Kontrol Elektromekanik\nWahyu Ikhsannudin, M.Pd,Elektronika Dasar\nRukayah, S.Pd,PLC,Robotika";
+        const templateContent = `nama,mapel
+"Irffan Saktiansyah, S.T","Sistem Kontrol Elektromekanik"
+"Wahyu Ikhsannudin, M.Pd","Elektronika Dasar, PLC"
+"Asep Bangbang Purnawan, S.T","Sistem Kontrol Elektromekanik, Robotika"`;
         const blob = new Blob(["\uFEFF" + templateContent], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
