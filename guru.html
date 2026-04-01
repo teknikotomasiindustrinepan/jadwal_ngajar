@@ -16,7 +16,7 @@
             padding: 30px 20px;
         }
         .container {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 0 auto;
             background: white;
             border-radius: 32px;
@@ -61,7 +61,7 @@
         }
         .form-group {
             flex: 1;
-            min-width: 180px;
+            min-width: 200px;
         }
         label {
             display: block;
@@ -72,7 +72,7 @@
             margin-bottom: 6px;
             letter-spacing: 0.5px;
         }
-        input, select, button {
+        input, select, button, textarea {
             width: 100%;
             padding: 10px 14px;
             border-radius: 28px;
@@ -107,12 +107,6 @@
         .btn-secondary:hover {
             background: #2f5570;
         }
-        .btn-danger {
-            background: #d9534f;
-        }
-        .btn-danger:hover {
-            background: #c9302c;
-        }
         .table-wrapper {
             overflow-x: auto;
             border-radius: 20px;
@@ -135,6 +129,7 @@
         td {
             padding: 10px 12px;
             border-bottom: 1px solid #ecf3f8;
+            vertical-align: top;
         }
         .btn-hapus-guru {
             background: #d9534f;
@@ -148,6 +143,14 @@
             font-size: 0.7rem;
             width: auto;
             margin-right: 6px;
+        }
+        .mapel-item {
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+        .mapel-kelompok {
+            font-weight: 600;
+            color: #2c7a4d;
         }
         .footer-note {
             margin-top: 24px;
@@ -163,16 +166,64 @@
             padding: 20px;
             color: #2c7a4d;
         }
-        .mapel-list {
-            font-size: 0.8rem;
-            background: #eef2fa;
-            padding: 4px 8px;
-            border-radius: 16px;
-            display: inline-block;
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            max-width: 500px;
+            width: 90%;
+            border-radius: 24px;
+            padding: 20px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .close-modal {
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        .mapel-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .mapel-row input {
+            flex: 1;
+            margin: 0;
+        }
+        .btn-remove-mapel {
+            background: #d9534f;
+            padding: 6px 10px;
+            font-size: 0.7rem;
+            width: auto;
+        }
+        .btn-add-mapel {
+            background: #5bc0de;
+            margin-top: 10px;
+            width: auto;
         }
         @media (max-width: 640px) {
             .container { padding: 18px; }
             .form-row { flex-direction: column; }
+            .mapel-row { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
@@ -182,7 +233,7 @@
         👩‍🏫 Manajemen Guru
         <small>Teknik Otomasi Industri</small>
     </h1>
-    <div class="sub">➕ Kelola data guru & mata pelajaran (bisa lebih dari satu mapel)</div>
+    <div class="sub">➕ Kelola data guru & mata pelajaran (setiap mapel memiliki kelompok)</div>
 
     <div id="authStatus" class="loading">⏳ Menghubungkan ke Firebase...</div>
 
@@ -195,12 +246,11 @@
                     <input type="text" id="namaGuruInput" placeholder="Contoh: Irflan Saktiansyah, S.T">
                 </div>
                 <div class="form-group">
-                    <label>📚 Mata Pelajaran (pisah dengan koma)</label>
-                    <input type="text" id="mapelInput" placeholder="Contoh: Sistem Kontrol Elektromekanik, PLC">
+                    <button id="tambahGuruBtn" class="btn-secondary">➕ Tambah Guru (tanpa mapel)</button>
                 </div>
-                <div class="form-group">
-                    <button id="tambahGuruBtn" class="btn-secondary">➕ Tambah Guru</button>
-                </div>
+            </div>
+            <div style="margin-top: 16px; font-size: 0.8rem; color: #6c86a0;">
+                ℹ️ Setelah menambah guru, klik "Edit Mapel" untuk menambahkan mata pelajaran beserta kelompoknya.
             </div>
         </div>
 
@@ -225,23 +275,40 @@
             <div class="table-wrapper">
                 <table id="guruTable">
                     <thead>
-                        <tr><th>No</th><th>Nama Guru</th><th>Mata Pelajaran</th><th>Aksi</th>inea
+                        <tr><th>No</th><th>Nama Guru</th><th>Kelompok Mapel</th><th>Nama Mapel</th><th>Aksi</th> </>
                     </thead>
                     <tbody id="guruTbody">
-                        <tr><td colspan="4">Memuat data guru...</td></tr>
+                        <tr><td colspan="5">Memuat data guru...</td> </>
                     </tbody>
-                </table>
+                 </table>
             </div>
         </div>
     </div>
 
     <div class="footer-note">
         💡 <strong>Petunjuk:</strong><br>
-        • Tambah guru: isi nama dan mapel (pisahkan dengan koma jika lebih dari satu).<br>
-        • Impor CSV: gunakan template yang disediakan. Format CSV mendukung kutip untuk menangani koma di dalam nilai. Contoh: <code>"Irffan Saktiansyah, S.T","Sistem Kontrol Elektromekanik"</code><br>
-        • Data otomatis diurutkan berdasarkan nama (A-Z) dan diberi nomor urut.<br>
-        • Edit mapel: klik tombol "Edit Mapel" untuk mengubah daftar mapel guru.<br>
-        • Hapus guru akan menghapus data secara permanen.
+        • Tambah guru: isi nama, lalu gunakan tombol "Edit Mapel" untuk menambahkan kelompok dan nama mapel.<br>
+        • Impor CSV: gunakan template dengan kolom <code>nama,kelompok,mapel</code>. Baris dapat diulang untuk satu guru dengan mapel berbeda. Data akan digabung otomatis.<br>
+        • Format CSV: <code>"Irffan Saktiansyah, S.T","Sistem Kontrol","Sistem Kontrol Elektromekanik"</code><br>
+        • Untuk menambahkan mapel ke guru yang sudah ada, gunakan tombol "Edit Mapel".<br>
+        • Data otomatis diurutkan berdasarkan nama guru (A-Z) dan diberi nomor urut.
+    </div>
+</div>
+
+<!-- Modal Edit Mapel -->
+<div id="mapelModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Mata Pelajaran</h3>
+            <button class="close-modal">&times;</button>
+        </div>
+        <div id="modalGuruNama" style="margin-bottom: 16px; font-weight: bold;"></div>
+        <div id="mapelListContainer"></div>
+        <button id="addMapelBtn" class="btn-add-mapel">+ Tambah Mapel</button>
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button id="saveMapelBtn" style="flex:1;">💾 Simpan</button>
+            <button id="cancelMapelBtn" class="btn-outline" style="flex:1;">Batal</button>
+        </div>
     </div>
 </div>
 
@@ -249,7 +316,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    
+
     const firebaseConfig = {
         apiKey: "AIzaSyDKR4e_9uHBhBqQEdxR7s2R807fawb7J8Y",
         authDomain: "absensi-toi.firebaseapp.com",
@@ -258,13 +325,12 @@
         messagingSenderId: "1069310497322",
         appId: "1:1069310497322:web:2705d66e041c41a1626953"
     };
-    
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
-    
+
     const namaGuruInput = document.getElementById('namaGuruInput');
-    const mapelInput = document.getElementById('mapelInput');
     const tambahGuruBtn = document.getElementById('tambahGuruBtn');
     const guruTbody = document.getElementById('guruTbody');
     const importCsvBtn = document.getElementById('importCsvBtn');
@@ -273,7 +339,19 @@
     const authStatus = document.getElementById('authStatus');
     const mainContent = document.getElementById('mainContent');
     
-    // Fungsi untuk mengurutkan semua guru berdasarkan nama (A-Z) dan memberi nomor urut
+    // Modal elements
+    const modal = document.getElementById('mapelModal');
+    const modalGuruNama = document.getElementById('modalGuruNama');
+    const mapelListContainer = document.getElementById('mapelListContainer');
+    const addMapelBtn = document.getElementById('addMapelBtn');
+    const saveMapelBtn = document.getElementById('saveMapelBtn');
+    const cancelMapelBtn = document.getElementById('cancelMapelBtn');
+    const closeModalBtns = document.querySelectorAll('.close-modal');
+
+    let currentEditingGuruId = null;
+    let currentMapelArray = []; // array of {kelompok, mapel}
+
+    // Fungsi untuk mengurutkan guru berdasarkan nama dan renumber
     async function sortAndRenumberGuru() {
         const guruRef = collection(db, "guru");
         const snapshot = await getDocs(guruRef);
@@ -293,14 +371,14 @@
         }
         await batch.commit();
     }
-    
+
     // Load dan tampilkan semua guru
     async function loadGuru() {
         try {
             const guruRef = collection(db, "guru");
             const snapshot = await getDocs(guruRef);
             if (snapshot.empty) {
-                guruTbody.innerHTML = '<tr><td colspan="4">Belum ada data guru. Tambahkan guru baru atau impor CSV.</td></tr>';
+                guruTbody.innerHTML = '<tr><td colspan="5">Belum ada data guru. Tambahkan guru baru.</td></tr>';
                 return;
             }
             let guruList = [];
@@ -309,21 +387,33 @@
                     id: docSnap.id,
                     no: docSnap.data().no || 999,
                     nama: docSnap.data().nama,
-                    mapel: docSnap.data().mapel || []
+                    mapelList: docSnap.data().mapel || [] // array of {kelompok, mapel}
                 });
             });
             guruList.sort((a, b) => a.no - b.no);
             
             let html = '';
             guruList.forEach(guru => {
-                const mapelString = guru.mapel && guru.mapel.length ? guru.mapel.join(', ') : '-';
+                // Kelompok Mapel: semua kelompok digabung dengan baris baru
+                let kelompokHtml = '';
+                let mapelHtml = '';
+                if (guru.mapelList && guru.mapelList.length) {
+                    guru.mapelList.forEach(item => {
+                        kelompokHtml += `<div class="mapel-item">${escapeHtml(item.kelompok || '-')}</div>`;
+                        mapelHtml += `<div class="mapel-item">${escapeHtml(item.mapel || '-')}</div>`;
+                    });
+                } else {
+                    kelompokHtml = '<div class="mapel-item">-</div>';
+                    mapelHtml = '<div class="mapel-item">-</div>';
+                }
                 html += `
                     <tr>
                         <td>${guru.no}</td>
                         <td>${escapeHtml(guru.nama)}</td>
-                        <td><span class="mapel-list">${escapeHtml(mapelString)}</span></td>
+                        <td>${kelompokHtml}</td>
+                        <td>${mapelHtml}</td>
                         <td>
-                            <button class="btn-edit-mapel" data-id="${guru.id}" data-nama="${escapeHtml(guru.nama)}" data-mapel="${escapeHtml(mapelString)}">✏️ Edit Mapel</button>
+                            <button class="btn-edit-mapel" data-id="${guru.id}" data-nama="${escapeHtml(guru.nama)}">✏️ Edit Mapel</button>
                             <button class="btn-hapus-guru" data-id="${guru.id}">🗑️ Hapus</button>
                         </td>
                     </tr>
@@ -331,18 +421,16 @@
             });
             guruTbody.innerHTML = html;
             
+            // Event edit mapel
             document.querySelectorAll('.btn-edit-mapel').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const guruId = btn.getAttribute('data-id');
-                    const currentMapel = btn.getAttribute('data-mapel') || '';
-                    const newMapelStr = prompt("Edit mata pelajaran (pisahkan dengan koma jika lebih dari satu):", currentMapel);
-                    if (newMapelStr !== null) {
-                        const mapelArray = newMapelStr.split(',').map(m => m.trim()).filter(m => m);
-                        updateMapelGuru(guruId, mapelArray);
-                    }
+                    const guruNama = btn.getAttribute('data-nama');
+                    openModal(guruId, guruNama);
                 });
             });
             
+            // Event hapus guru
             document.querySelectorAll('.btn-hapus-guru').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const guruId = btn.getAttribute('data-id');
@@ -355,50 +443,126 @@
             });
         } catch (error) {
             console.error("Error load guru: ", error);
-            guruTbody.innerHTML = '<tr><td colspan="4">Gagal memuat data guru. Periksa koneksi.</td></tr>';
+            guruTbody.innerHTML = '<tr><td colspan="5">Gagal memuat data guru.</td></tr>';
         }
     }
-    
-    async function updateMapelGuru(guruId, mapelArray) {
+
+    // Modal untuk mengedit mapel
+    function openModal(guruId, guruNama) {
+        currentEditingGuruId = guruId;
+        modalGuruNama.innerText = guruNama;
+        // Ambil data mapel terbaru dari firestore untuk guru ini
+        const guruRef = doc(db, "guru", guruId);
+        getDocs(collection(db, "guru")).then(async () => {
+            const docSnap = await getDocs(collection(db, "guru"));
+            let mapels = [];
+            docSnap.forEach(d => {
+                if (d.id === guruId) {
+                    mapels = d.data().mapel || [];
+                }
+            });
+            currentMapelArray = mapels.map(m => ({ kelompok: m.kelompok || '', mapel: m.mapel || '' }));
+            renderMapelForm();
+            modal.style.display = 'flex';
+        }).catch(err => {
+            console.error(err);
+            currentMapelArray = [];
+            renderMapelForm();
+            modal.style.display = 'flex';
+        });
+    }
+
+    function renderMapelForm() {
+        mapelListContainer.innerHTML = '';
+        if (currentMapelArray.length === 0) {
+            currentMapelArray.push({ kelompok: '', mapel: '' });
+        }
+        currentMapelArray.forEach((item, idx) => {
+            const div = document.createElement('div');
+            div.className = 'mapel-row';
+            div.innerHTML = `
+                <input type="text" placeholder="Kelompok Mapel (contoh: Sistem Kontrol)" value="${escapeHtml(item.kelompok)}" class="kelompok-input" data-idx="${idx}">
+                <input type="text" placeholder="Nama Mapel (contoh: Sistem Kontrol Elektromekanik)" value="${escapeHtml(item.mapel)}" class="mapel-input" data-idx="${idx}">
+                <button class="btn-remove-mapel" data-idx="${idx}">✖</button>
+            `;
+            mapelListContainer.appendChild(div);
+        });
+        // Event remove
+        document.querySelectorAll('.btn-remove-mapel').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(btn.getAttribute('data-idx'));
+                currentMapelArray.splice(idx, 1);
+                renderMapelForm();
+            });
+        });
+        // Event update on input
+        document.querySelectorAll('.kelompok-input').forEach(inp => {
+            inp.addEventListener('input', (e) => {
+                const idx = parseInt(inp.getAttribute('data-idx'));
+                currentMapelArray[idx].kelompok = inp.value;
+            });
+        });
+        document.querySelectorAll('.mapel-input').forEach(inp => {
+            inp.addEventListener('input', (e) => {
+                const idx = parseInt(inp.getAttribute('data-idx'));
+                currentMapelArray[idx].mapel = inp.value;
+            });
+        });
+    }
+
+    addMapelBtn.addEventListener('click', () => {
+        currentMapelArray.push({ kelompok: '', mapel: '' });
+        renderMapelForm();
+    });
+
+    async function saveMapelToFirebase() {
+        if (!currentEditingGuruId) return;
+        // Filter kosong
+        const filtered = currentMapelArray.filter(m => m.kelompok.trim() !== '' || m.mapel.trim() !== '');
         try {
-            const guruRef = doc(db, "guru", guruId);
-            await updateDoc(guruRef, { mapel: mapelArray });
-            loadGuru();
+            const guruRef = doc(db, "guru", currentEditingGuruId);
+            await updateDoc(guruRef, { mapel: filtered });
+            modal.style.display = 'none';
+            loadGuru(); // refresh
         } catch (error) {
-            console.error("Error update mapel: ", error);
-            alert("Gagal mengupdate mapel.");
+            console.error("Error saving mapel:", error);
+            alert("Gagal menyimpan mapel.");
         }
     }
-    
+
+    cancelMapelBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+    closeModalBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    });
+    saveMapelBtn.addEventListener('click', saveMapelToFirebase);
+
     // Tambah guru manual
     async function tambahGuru() {
         const nama = namaGuruInput.value.trim();
-        const mapelStr = mapelInput.value.trim();
         if (!nama) {
             alert("Nama guru harus diisi!");
             return;
         }
-        let mapelArray = [];
-        if (mapelStr) {
-            mapelArray = mapelStr.split(',').map(m => m.trim()).filter(m => m);
-        }
         try {
             await addDoc(collection(db, "guru"), {
                 nama: nama,
-                mapel: mapelArray,
+                mapel: [],
                 no: 9999
             });
             await sortAndRenumberGuru();
             namaGuruInput.value = '';
-            mapelInput.value = '';
             loadGuru();
-            alert(`Guru "${nama}" berhasil ditambahkan.`);
+            alert(`Guru "${nama}" berhasil ditambahkan. Sekarang tambahkan mapel melalui tombol Edit.`);
         } catch (error) {
             console.error("Error tambah guru: ", error);
             alert("Gagal menambah guru.");
         }
     }
-    
+
     // ---------- CSV Parser dengan dukungan kutip ----------
     function parseCSVLine(line) {
         const result = [];
@@ -408,7 +572,6 @@
             const char = line[i];
             if (char === '"') {
                 if (inQuotes && line[i+1] === '"') {
-                    // double quote escape
                     current += '"';
                     i++;
                 } else {
@@ -422,36 +585,43 @@
             }
         }
         result.push(current);
-        // trim spasi di sekitar nilai (opsional)
         return result.map(field => field.trim());
     }
-    
+
     function parseCSV(csvText) {
         const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== "");
         if (lines.length < 2) return [];
-        // ambil header
         const header = parseCSVLine(lines[0]);
         const namaIndex = header.findIndex(h => h.toLowerCase() === 'nama');
+        const kelompokIndex = header.findIndex(h => h.toLowerCase() === 'kelompok');
         const mapelIndex = header.findIndex(h => h.toLowerCase() === 'mapel');
         if (namaIndex === -1) {
-            alert("CSV harus memiliki kolom 'nama'. Kolom 'mapel' opsional.");
+            alert("CSV harus memiliki kolom 'nama'.");
             return [];
         }
-        const guruList = [];
+        const guruMap = new Map(); // key: nama, value: { mapelList: [{kelompok, mapel}] }
         for (let i = 1; i < lines.length; i++) {
             const fields = parseCSVLine(lines[i]);
             if (fields.length <= namaIndex) continue;
             const nama = fields[namaIndex];
             if (!nama) continue;
-            let mapelArray = [];
-            if (mapelIndex !== -1 && fields.length > mapelIndex && fields[mapelIndex]) {
-                mapelArray = fields[mapelIndex].split(',').map(m => m.trim()).filter(m => m);
+            let kelompok = (kelompokIndex !== -1 && fields.length > kelompokIndex) ? fields[kelompokIndex] : '';
+            let mapel = (mapelIndex !== -1 && fields.length > mapelIndex) ? fields[mapelIndex] : '';
+            if (!guruMap.has(nama)) {
+                guruMap.set(nama, []);
             }
-            guruList.push({ nama, mapel: mapelArray });
+            if (kelompok || mapel) {
+                guruMap.get(nama).push({ kelompok, mapel });
+            }
+        }
+        // Konversi ke array
+        const guruList = [];
+        for (let [nama, mapelList] of guruMap.entries()) {
+            guruList.push({ nama, mapel: mapelList });
         }
         return guruList;
     }
-    
+
     async function importCSV(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -485,7 +655,7 @@
             reader.readAsText(file, "UTF-8");
         });
     }
-    
+
     importCsvBtn.addEventListener('click', () => {
         const file = csvFileInput.files[0];
         if (!file) {
@@ -502,13 +672,14 @@
                 alert("Gagal impor: " + err);
             });
     });
-    
-    // Download template CSV dengan kutip untuk menangani koma
+
+    // Download template CSV (dengan kelompok dan mapel)
     function downloadTemplate() {
-        const templateContent = `nama,mapel
-"Irffan Saktiansyah, S.T","Sistem Kontrol Elektromekanik"
-"Wahyu Ikhsannudin, M.Pd","Elektronika Dasar, PLC"
-"Asep Bangbang Purnawan, S.T","Sistem Kontrol Elektromekanik, Robotika"`;
+        const templateContent = `nama,kelompok,mapel
+"Irffan Saktiansyah, S.T","Sistem Kontrol Elektromekanik","Sistem Kontrol Elektromekanik"
+"Wahyu Ikhsannudin, M.Pd","Elektronika","Elektronika Dasar"
+"Wahyu Ikhsannudin, M.Pd","PLC","Pemrograman PLC"
+"Asep Bangbang Purnawan, S.T","Sistem Kontrol","Sistem Kontrol Elektropneumatik"`;
         const blob = new Blob(["\uFEFF" + templateContent], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
@@ -520,9 +691,9 @@
         URL.revokeObjectURL(url);
     }
     downloadTemplateBtn.addEventListener('click', downloadTemplate);
-    
+
     tambahGuruBtn.addEventListener('click', tambahGuru);
-    
+
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
@@ -532,7 +703,7 @@
             return m;
         });
     }
-    
+
     // Autentikasi
     onAuthStateChanged(auth, (user) => {
         if (user) {
