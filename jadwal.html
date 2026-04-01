@@ -176,7 +176,7 @@
         📅 Jadwal Pelajaran
         <small>Teknik Otomasi Industri</small>
     </h1>
-    <div class="sub">Atur jadwal per kelas (Senin–Jumat, 10 JP per hari) — mata pelajaran dari dropdown</div>
+    <div class="sub">Atur jadwal per kelas (Senin–Jumat, 10 JP per hari) — pilih Kelompok Mapel dari dropdown (data dari guru)</div>
 
     <div id="authStatus" class="loading">⏳ Menghubungkan ke Firebase...</div>
 
@@ -224,9 +224,9 @@
                         <!-- header akan diisi JS -->
                     </thead>
                     <tbody id="tableBody">
-                        <tr><td colspan="12" class="loading">Pilih kelas dan klik "Muat Jadwal"</td>)</tr>
+                         <tr><td colspan="12" class="loading">Pilih kelas dan klik "Muat Jadwal"</td></tr>
                     </tbody>
-                 </table>
+                </table>
             </div>
         </div>
     </div>
@@ -234,9 +234,9 @@
     <div class="footer-note">
         💡 <strong>Petunjuk:</strong><br>
         • Pilih kelas, klik "Muat Jadwal" untuk menampilkan jadwal yang tersimpan.<br>
-        • Pilih mata pelajaran dari dropdown di setiap sel.<br>
+        • Pilih <strong>Kelompok Mapel</strong> dari dropdown (data diambil dari guru yang sudah diinput).<br>
         • Klik "Simpan Jadwal" untuk menyimpan ke Firebase.<br>
-        • Impor CSV: format kolom: <code>Hari,JP1,JP2,...,JP10</code> (header wajib). Nama mapel harus sesuai dengan yang ada di dropdown.<br>
+        • Impor CSV: format kolom: <code>Hari,JP1,JP2,...,JP10</code> (header wajib). Isi dengan Kelompok Mapel yang sesuai dengan dropdown.<br>
         • Template CSV dapat diunduh dan diisi sesuai kebutuhan.
     </div>
 </div>
@@ -288,49 +288,57 @@
     const hariList = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 
     // Data
-    let currentSchedule = {}; // { "Senin": { "1": "Matematika", ... }, ... }
+    let currentSchedule = {}; // { "Senin": { "1": "Kelompok A", ... }, ... }
     let currentKelasId = "";
-    let mapelOptions = []; // array of unique mapel names
+    let kelompokOptions = []; // array of unique kelompok names
 
-    // ================== AMBIL DAFTAR MAPEL DARI GURU ==================
-    async function loadMapelList() {
+    // ================== AMBIL DAFTAR KELOMPOK MAPEL DARI GURU ==================
+    async function loadKelompokList() {
         try {
             const guruSnapshot = await getDocs(collection(db, "guru"));
-            const mapelSet = new Set();
+            const kelompokSet = new Set();
             guruSnapshot.forEach(doc => {
                 const data = doc.data();
-                const mapelArray = data.mapel || [];
-                mapelArray.forEach(m => {
-                    if (m && m.trim()) mapelSet.add(m.trim());
+                const mapelList = data.mapel || []; // array of {kelompok, mapel}
+                mapelList.forEach(item => {
+                    if (item.kelompok && item.kelompok.trim()) {
+                        kelompokSet.add(item.kelompok.trim());
+                    }
                 });
             });
-            mapelOptions = Array.from(mapelSet).sort((a,b) => a.localeCompare(b, 'id'));
-            if (mapelOptions.length === 0) {
-                console.warn("Belum ada mata pelajaran di database guru.");
+            kelompokOptions = Array.from(kelompokSet).sort((a,b) => a.localeCompare(b, 'id'));
+            if (kelompokOptions.length === 0) {
+                console.warn("Belum ada kelompok mapel di database guru.");
             }
         } catch (error) {
-            console.error("Error loading mapel:", error);
-            mapelOptions = [];
+            console.error("Error loading kelompok:", error);
+            kelompokOptions = [];
         }
     }
 
-    // ================== LOAD DAFTAR KELAS ==================
+    // ================== LOAD DAFTAR KELAS (diurutkan abjad) ==================
     async function loadKelas() {
         const kelasSnapshot = await getDocs(collection(db, "kelas"));
-        kelasSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+        let kelasList = [];
         kelasSnapshot.forEach(doc => {
-            const kelasData = doc.data();
+            kelasList.push({ id: doc.id, nama: doc.data().nama });
+        });
+        // Urutkan berdasarkan nama kelas
+        kelasList.sort((a, b) => a.nama.localeCompare(b.nama, 'id', { sensitivity: 'base' }));
+
+        kelasSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+        kelasList.forEach(kelas => {
             const option = document.createElement('option');
-            option.value = doc.id;
-            option.textContent = kelasData.nama;
+            option.value = kelas.id;
+            option.textContent = kelas.nama;
             kelasSelect.appendChild(option);
         });
-        if (kelasSnapshot.size > 0) {
-            kelasSelect.value = kelasSnapshot.docs[0].id;
+        if (kelasList.length > 0) {
+            kelasSelect.value = kelasList[0].id;
             currentKelasId = kelasSelect.value;
             loadJadwal(currentKelasId);
         } else {
-            tableBody.innerHTML = '的人<td colspan="12" class="loading">Belum ada kelas. Buat kelas di halaman biodata terlebih dahulu.</td> </tr>';
+            tableBody.innerHTML = '<tr><td colspan="12" class="loading">Belum ada kelas. Buat kelas di halaman siswa terlebih dahulu.</td></tr>';
         }
     }
 
@@ -352,7 +360,7 @@
         }
     }
 
-    // ================== RENDER TABEL JADWAL DENGAN DROPDOWN ==================
+    // ================== RENDER TABEL JADWAL DENGAN DROPDOWN KELOMPOK ==================
     function renderTable() {
         // Header
         let headerHtml = '<tr><th>Hari / JP</th>';
@@ -362,10 +370,10 @@
         headerHtml += '</tr>';
         tableHeader.innerHTML = headerHtml;
 
-        // Buat opsi dropdown
+        // Buat opsi dropdown kelompok
         let optionsHtml = '<option value="">-- Pilih --</option>';
-        mapelOptions.forEach(m => {
-            optionsHtml += `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`;
+        kelompokOptions.forEach(k => {
+            optionsHtml += `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`;
         });
 
         // Body
@@ -374,12 +382,12 @@
             const hari = hariList[h];
             bodyHtml += `<tr><td>${hari}</td>`;
             for (let jp = 1; jp <= 10; jp++) {
-                const selectedMapel = currentSchedule[hari]?.[jp] || '';
+                const selectedKelompok = currentSchedule[hari]?.[jp] || '';
                 bodyHtml += `
                     <td>
                         <select class="jadwal-select" data-hari="${hari}" data-jp="${jp}">
                             ${optionsHtml}
-                            ${selectedMapel ? `<option value="${escapeHtml(selectedMapel)}" selected>${escapeHtml(selectedMapel)}</option>` : ''}
+                            ${selectedKelompok ? `<option value="${escapeHtml(selectedKelompok)}" selected>${escapeHtml(selectedKelompok)}</option>` : ''}
                         </select>
                     </td>
                 `;
@@ -473,7 +481,7 @@
         URL.revokeObjectURL(url);
     }
 
-    // ================== IMPOR CSV ==================
+    // ================== IMPOR CSV (mendukung kutip) ==================
     function parseCSVLine(line) {
         const result = [];
         let current = '';
@@ -500,12 +508,12 @@
 
     function parseCSV(csvText) {
         const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== "");
-        if (lines.length < 2) return [];
+        if (lines.length < 2) return {};
         const header = parseCSVLine(lines[0]);
         const hariIndex = header.findIndex(h => h.toLowerCase() === 'hari');
         if (hariIndex === -1) {
             alert("CSV harus memiliki kolom 'Hari'.");
-            return [];
+            return {};
         }
         const jpIndices = [];
         for (let i = 1; i <= 10; i++) {
@@ -564,9 +572,10 @@
 
     // ================== DOWNLOAD TEMPLATE ==================
     function downloadTemplate() {
+        // Contoh template menggunakan kelompok mapel yang umum
         const templateRows = [
             ["Hari", "JP1", "JP2", "JP3", "JP4", "JP5", "JP6", "JP7", "JP8", "JP9", "JP10"],
-            ["Senin", "Matematika", "Bahasa Indonesia", "Fisika", "Kimia", "Olahraga", "Produktif", "Produktif", "Produktif", "Bimbingan", "Ibadah"],
+            ["Senin", "Sistem Kontrol Elektromekanik", "Sistem Kontrol Elektronik", "Piranti Sensor", "Sistem Kontrol Elektropneumatik", "Produktif", "Produktif", "Produktif", "Bimbingan", "Ibadah", "Ibadah"],
             ["Selasa", "Bahasa Inggris", "Sejarah", "PKN", "Matematika", "Fisika", "Produktif", "Produktif", "Produktif", "Bimbingan", "Ibadah"],
             ["Rabu", "Kimia", "Produktif", "Produktif", "Produktif", "Bahasa Indonesia", "Matematika", "Fisika", "Olahraga", "Bimbingan", "Ibadah"],
             ["Kamis", "Produktif", "Produktif", "Produktif", "Bahasa Inggris", "Matematika", "Kimia", "Fisika", "PKN", "Bimbingan", "Ibadah"],
@@ -624,7 +633,7 @@
         if (user) {
             authStatus.style.display = 'none';
             mainContent.style.display = 'block';
-            await loadMapelList(); // Ambil daftar mapel dari guru
+            await loadKelompokList(); // Ambil daftar kelompok dari guru
             loadKelas();
         } else {
             authStatus.innerHTML = '🔄 Melakukan login anonim...';
