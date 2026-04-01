@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengaturan Minggu - Teknik Otomasi Industri</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+        body {
+            background: #eef2f8;
+            padding: 30px 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            padding: 28px 32px;
+        }
+        h1 {
+            font-size: 1.7rem;
+            color: #1a4a6f;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        h1 small {
+            font-size: 0.75rem;
+            background: #e9f0f5;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-weight: normal;
+        }
+        .sub {
+            color: #5a6e7c;
+            margin-bottom: 28px;
+            border-left: 4px solid #2c7a4d;
+            padding-left: 16px;
+            font-size: 0.9rem;
+        }
+        .card {
+            background: #f9fbfd;
+            border-radius: 24px;
+            padding: 20px 24px;
+            margin-bottom: 28px;
+            border: 1px solid #e2edf2;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-end;
+            margin-bottom: 16px;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #2c6b4f;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 28px;
+            border: 1px solid #cfdfea;
+            background: white;
+            font-size: 0.85rem;
+        }
+        button {
+            background: #2c7a4d;
+            color: white;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: #1e5e3a;
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #2c7a4d;
+            color: #2c7a4d;
+        }
+        .btn-outline:hover {
+            background: #eef5ea;
+            transform: none;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 20px;
+            border: 1px solid #e2edf2;
+            margin-top: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th, td {
+            padding: 12px 12px;
+            border-bottom: 1px solid #ecf3f8;
+            text-align: left;
+        }
+        th {
+            background: #eef4fa;
+            font-weight: 700;
+            color: #1e4a6e;
+        }
+        .minggu-table input {
+            width: 100%;
+            padding: 6px 10px;
+            border-radius: 20px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #2c7a4d;
+            background: white;
+            border-radius: 24px;
+        }
+        .footer-note {
+            margin-top: 24px;
+            font-size: 0.7rem;
+            text-align: center;
+            color: #6c86a0;
+            background: #f6fafd;
+            padding: 12px;
+            border-radius: 24px;
+        }
+        .info-jumlah {
+            background: #e9f0f5;
+            padding: 12px 16px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #1a4a6f;
+        }
+        .auto-generate {
+            background: #eef5ea;
+            border-left: 4px solid #2c7a4d;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            border-radius: 16px;
+        }
+        @media (max-width: 700px) {
+            .container { padding: 18px; }
+            .form-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>
+        📅 Pengaturan Minggu
+        <small>Teknik Otomasi Industri</small>
+    </h1>
+    <div class="sub">Tentukan tanggal Senin minggu ke-1, sistem akan otomatis menghitung rentang Senin-Jumat untuk semua minggu</div>
+
+    <div id="authStatus" class="loading">⏳ Menghubungkan ke Firebase...</div>
+
+    <div id="mainContent" style="display: none;">
+        <div class="card">
+            <div class="info-jumlah" id="infoJumlahMinggu">
+                ⏳ Memuat jumlah minggu...
+            </div>
+
+            <div class="auto-generate">
+                <div class="form-row" style="margin-bottom: 0;">
+                    <div class="form-group">
+                        <label>📅 Tanggal Senin Minggu Ke-1</label>
+                        <input type="date" id="tanggalMulaiMinggu1">
+                    </div>
+                    <div class="form-group">
+                        <button id="generateBtn" class="btn-outline" style="margin-top: 24px;">🔄 Generate Otomatis</button>
+                    </div>
+                </div>
+                <div style="font-size: 0.8rem; color: #6c86a0; margin-top: 8px;">
+                    * Sistem akan menghitung otomatis minggu 1 (Senin - Jumat), minggu 2 (Senin +7 - Jumat +7), dst.
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="minggu-table" id="mingguTable">
+                    <thead>
+                        <tr><th>Minggu Ke-</th><th>Tanggal Mulai (Senin)</th><th>Tanggal Akhir (Jumat)</th> </thead>
+                    <tbody id="mingguTbody">
+                        <tr><td colspan="3">Memuat data......   </>
+                    </tbody>
+                 </table>
+            </div>
+
+            <div style="display: flex; gap: 16px; margin-top: 24px;">
+                <button id="simpanBtn" style="flex:1;">💾 Simpan Pengaturan</button>
+                <button id="resetBtn" class="btn-outline" style="flex:1;">↺ Reset Semua</button>
+            </div>
+        </div>
+        <div class="footer-note">
+            💡 <strong>Petunjuk:</strong> Jumlah minggu diambil dari pengaturan global. Masukkan tanggal Senin minggu ke-1, lalu klik Generate. Tabel akan terisi otomatis. Anda dapat mengedit manual jika diperlukan, lalu simpan. Data disimpan untuk absensi dan filter mingguan.
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDKR4e_9uHBhBqQEdxR7s2R807fawb7J8Y",
+        authDomain: "absensi-toi.firebaseapp.com",
+        projectId: "absensi-toi",
+        storageBucket: "absensi-toi.firebasestorage.app",
+        messagingSenderId: "1069310497322",
+        appId: "1:1069310497322:web:2705d66e041c41a1626953"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const authStatus = document.getElementById('authStatus');
+    const mainContent = document.getElementById('mainContent');
+    const infoJumlahMinggu = document.getElementById('infoJumlahMinggu');
+    const mingguTbody = document.getElementById('mingguTbody');
+    const simpanBtn = document.getElementById('simpanBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const generateBtn = document.getElementById('generateBtn');
+    const tanggalMulaiMinggu1 = document.getElementById('tanggalMulaiMinggu1');
+
+    let jumlahMinggu = 0;
+    let currentData = []; // array of {mingguKe, tanggalMulai, tanggalAkhir}
+
+    // ==================== AMBIL JUMLAH MINGGU DARI FIRESTORE ====================
+    async function loadJumlahMinggu() {
+        try {
+            const globalRef = doc(db, "pengaturan", "global");
+            const globalSnap = await getDoc(globalRef);
+            if (globalSnap.exists()) {
+                jumlahMinggu = globalSnap.data().jumlahMinggu || 11;
+            } else {
+                jumlahMinggu = 11;
+                await setDoc(globalRef, { jumlahMinggu: 11 });
+            }
+            infoJumlahMinggu.innerHTML = `📆 Jumlah minggu aktif: <strong>${jumlahMinggu}</strong> minggu (dapat diubah di halaman pengaturan lain)`;
+            return jumlahMinggu;
+        } catch (error) {
+            console.error("Error loading jumlah minggu:", error);
+            infoJumlahMinggu.innerHTML = "❌ Gagal memuat jumlah minggu. Gunakan default 11.";
+            return 11;
+        }
+    }
+
+    // ==================== AMBIL DATA TANGGAL PER MINGGU ====================
+    async function loadTanggalPerMinggu() {
+        try {
+            const mingguRef = doc(db, "pengaturanMinggu", "current");
+            const mingguSnap = await getDoc(mingguRef);
+            if (mingguSnap.exists()) {
+                const data = mingguSnap.data();
+                if (data.mingguList && Array.isArray(data.mingguList)) {
+                    return data.mingguList;
+                } else {
+                    return [];
+                }
+            } else {
+                return [];
+            }
+        } catch (error) {
+            console.error("Error loading tanggal per minggu:", error);
+            return [];
+        }
+    }
+
+    // ==================== GENERATE OTOMATIS DARI TANGGAL MINGGU 1 SENIN ====================
+    function generateFromMonday(mondayDate) {
+        if (!mondayDate) return [];
+        const start = new Date(mondayDate);
+        if (isNaN(start.getTime())) return [];
+        
+        const result = [];
+        for (let i = 0; i < jumlahMinggu; i++) {
+            const senin = new Date(start);
+            senin.setDate(start.getDate() + (i * 7));
+            const jumat = new Date(senin);
+            jumat.setDate(senin.getDate() + 4); // Jumat = Senin + 4 hari
+            
+            const tglMulai = senin.toISOString().split('T')[0];
+            const tglAkhir = jumat.toISOString().split('T')[0];
+            result.push({
+                mingguKe: i + 1,
+                tanggalMulai: tglMulai,
+                tanggalAkhir: tglAkhir
+            });
+        }
+        return result;
+    }
+
+    // ==================== RENDER TABEL ====================
+    function renderTable(data) {
+        mingguTbody.innerHTML = '';
+        for (let i = 1; i <= jumlahMinggu; i++) {
+            const existing = data.find(item => item.mingguKe === i);
+            const tglMulai = existing ? existing.tanggalMulai : '';
+            const tglAkhir = existing ? existing.tanggalAkhir : '';
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td style="font-weight:600;">Minggu ${i}</td>
+                <td><input type="date" class="tgl-mulai" data-minggu="${i}" value="${tglMulai}"></td>
+                <td><input type="date" class="tgl-akhir" data-minggu="${i}" value="${tglAkhir}"></td>
+            `;
+            mingguTbody.appendChild(row);
+        }
+
+        // Update currentData
+        currentData = [];
+        for (let i = 1; i <= jumlahMinggu; i++) {
+            currentData.push({
+                mingguKe: i,
+                tanggalMulai: '',
+                tanggalAkhir: ''
+            });
+        }
+        data.forEach(item => {
+            const idx = currentData.findIndex(d => d.mingguKe === item.mingguKe);
+            if (idx !== -1) {
+                currentData[idx].tanggalMulai = item.tanggalMulai;
+                currentData[idx].tanggalAkhir = item.tanggalAkhir;
+            }
+        });
+    }
+
+    // ==================== UPDATE currentData DARI INPUT ====================
+    function syncDataFromInputs() {
+        const inputsMulai = document.querySelectorAll('.tgl-mulai');
+        const inputsAkhir = document.querySelectorAll('.tgl-akhir');
+        for (let input of inputsMulai) {
+            const minggu = parseInt(input.getAttribute('data-minggu'));
+            const idx = currentData.findIndex(d => d.mingguKe === minggu);
+            if (idx !== -1) {
+                currentData[idx].tanggalMulai = input.value;
+            }
+        }
+        for (let input of inputsAkhir) {
+            const minggu = parseInt(input.getAttribute('data-minggu'));
+            const idx = currentData.findIndex(d => d.mingguKe === minggu);
+            if (idx !== -1) {
+                currentData[idx].tanggalAkhir = input.value;
+            }
+        }
+    }
+
+    // ==================== GENERATE DAN RENDER ULANG ====================
+    function handleGenerate() {
+        const mondayStr = tanggalMulaiMinggu1.value;
+        if (!mondayStr) {
+            alert("Masukkan tanggal Senin minggu ke-1 terlebih dahulu.");
+            return;
+        }
+        const generated = generateFromMonday(mondayStr);
+        if (generated.length === 0) {
+            alert("Tanggal tidak valid.");
+            return;
+        }
+        renderTable(generated);
+        alert(`Berhasil generate ${generated.length} minggu.`);
+    }
+
+    // ==================== SIMPAN KE FIRESTORE ====================
+    async function simpanPengaturan() {
+        syncDataFromInputs();
+        // Validasi: jika tanggal mulai diisi, tanggal akhir harus diisi dan tidak boleh lebih kecil
+        for (let item of currentData) {
+            if (item.tanggalMulai && !item.tanggalAkhir) {
+                alert(`Minggu ${item.mingguKe}: Tanggal mulai diisi tetapi tanggal akhir kosong.`);
+                return;
+            }
+            if (!item.tanggalMulai && item.tanggalAkhir) {
+                alert(`Minggu ${item.mingguKe}: Tanggal akhir diisi tetapi tanggal mulai kosong.`);
+                return;
+            }
+            if (item.tanggalMulai && item.tanggalAkhir) {
+                if (new Date(item.tanggalMulai) > new Date(item.tanggalAkhir)) {
+                    alert(`Minggu ${item.mingguKe}: Tanggal mulai tidak boleh lebih besar dari tanggal akhir.`);
+                    return;
+                }
+            }
+        }
+
+        try {
+            const mingguRef = doc(db, "pengaturanMinggu", "current");
+            await setDoc(mingguRef, { mingguList: currentData }, { merge: true });
+            alert("✅ Pengaturan minggu berhasil disimpan!");
+        } catch (error) {
+            console.error("Error saving:", error);
+            alert("❌ Gagal menyimpan. Periksa koneksi.");
+        }
+    }
+
+    // ==================== RESET SEMUA KOSONG ====================
+    function resetAll() {
+        if (confirm("Reset semua tanggal? Data yang sudah ada akan hilang.")) {
+            const emptyData = [];
+            for (let i = 1; i <= jumlahMinggu; i++) {
+                emptyData.push({ mingguKe: i, tanggalMulai: '', tanggalAkhir: '' });
+            }
+            renderTable(emptyData);
+            tanggalMulaiMinggu1.value = '';
+        }
+    }
+
+    // ==================== MUAT SEMUA DATA ====================
+    async function loadAll() {
+        try {
+            await loadJumlahMinggu();
+            const saved = await loadTanggalPerMinggu();
+            renderTable(saved);
+            // Jika ada data yang tersimpan, isi input minggu 1 untuk kemudahan
+            const minggu1 = saved.find(m => m.mingguKe === 1);
+            if (minggu1 && minggu1.tanggalMulai) {
+                tanggalMulaiMinggu1.value = minggu1.tanggalMulai;
+            }
+        } catch (error) {
+            console.error("Error loading all:", error);
+            mingguTbody.innerHTML = '<tr><td colspan="3">Gagal memuat data. Refresh halaman.</td></tr>';
+        }
+    }
+
+    // ==================== EVENT LISTENER ====================
+    simpanBtn.addEventListener('click', simpanPengaturan);
+    resetBtn.addEventListener('click', resetAll);
+    generateBtn.addEventListener('click', handleGenerate);
+
+    // ==================== AUTHENTIKASI ====================
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            authStatus.style.display = 'none';
+            mainContent.style.display = 'block';
+            loadAll();
+        } else {
+            authStatus.innerHTML = '🔄 Melakukan login anonim...';
+            signInAnonymously(auth).catch((error) => {
+                console.error("Gagal login anonim:", error);
+                authStatus.innerHTML = '❌ Gagal terhubung ke Firebase. Pastikan autentikasi anonim diaktifkan.';
+                authStatus.style.color = 'red';
+            });
+        }
+    });
+</script>
+</body>
+</html>
