@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadwal Gabungan (Kode Mapel) - Teknik Otomasi Industri</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+        body {
+            background: #eef2f8;
+            padding: 30px 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            padding: 28px 32px;
+        }
+        h1 {
+            font-size: 1.7rem;
+            color: #1a4a6f;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        h1 small {
+            font-size: 0.75rem;
+            background: #e9f0f5;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-weight: normal;
+        }
+        .sub {
+            color: #5a6e7c;
+            margin-bottom: 28px;
+            border-left: 4px solid #2c7a4d;
+            padding-left: 16px;
+            font-size: 0.9rem;
+        }
+        .card {
+            background: #f9fbfd;
+            border-radius: 24px;
+            padding: 20px 24px;
+            margin-bottom: 28px;
+            border: 1px solid #e2edf2;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-end;
+            margin-bottom: 16px;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 180px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #2c6b4f;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 28px;
+            border: 1px solid #cfdfea;
+            background: white;
+            font-size: 0.85rem;
+        }
+        button {
+            background: #2c7a4d;
+            color: white;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: #1e5e3a;
+            transform: translateY(-1px);
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 20px;
+            border: 1px solid #e2edf2;
+            margin-top: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            min-width: 800px;
+        }
+        th {
+            background: #eef4fa;
+            padding: 12px 12px;
+            text-align: left;
+            font-weight: 700;
+            color: #1e4a6e;
+            border-bottom: 1px solid #d4e2ef;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ecf3f8;
+            vertical-align: middle;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #2c7a4d;
+            background: white;
+            border-radius: 24px;
+        }
+        .footer-note {
+            margin-top: 24px;
+            font-size: 0.7rem;
+            text-align: center;
+            color: #6c86a0;
+            background: #f6fafd;
+            padding: 12px;
+            border-radius: 24px;
+        }
+        /* tooltip untuk menampilkan nama lengkap saat hover */
+        td[title] {
+            cursor: help;
+        }
+        @media (max-width: 700px) {
+            .container { padding: 18px; }
+            .form-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>
+        📅 Jadwal Gabungan (Kode Mapel)
+        <small>Teknik Otomasi Industri</small>
+    </h1>
+    <div class="sub">
+        Menampilkan jadwal per minggu dan hari dengan kode mapel (singkatan) yang diambil dari data guru. Setiap kode/grup memiliki warna latar yang berbeda untuk memudahkan identifikasi.
+    </div>
+
+    <div id="authStatus" class="loading">⏳ Menghubungkan ke Firebase...</div>
+
+    <div id="mainContent" style="display: none;">
+        <div class="card">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>📌 Pilih Kelas</label>
+                    <select id="kelasSelect">
+                        <option value="">-- Memuat kelas --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>📅 Hari</label>
+                    <select id="hariSelect">
+                        <option value="Senin">Senin</option>
+                        <option value="Selasa">Selasa</option>
+                        <option value="Rabu">Rabu</option>
+                        <option value="Kamis">Kamis</option>
+                        <option value="Jumat">Jumat</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>📆 Minggu ke-</label>
+                    <input type="number" id="mingguInput" min="1" max="20" value="1">
+                </div>
+                <div class="form-group">
+                    <button id="tampilkanBtn">🔍 Tampilkan Jadwal</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table id="jadwalTable">
+                <thead id="tableHeader">
+                    <tr>
+                        <th>No</th>
+                        <th>Nama Siswa</th>
+                        <!-- JP 1-10 akan ditambahkan oleh JS -->
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="12">Pilih kelas dan klik Tampilkan</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="footer-note">
+            💡 <strong>Keterangan:</strong> 
+            <ul style="margin-top: 8px; padding-left: 20px;">
+                <li>✅ Jadwal <strong>kelompok selain Produktif TOI</strong> diambil dari jadwal kelas (umum) dan ditampilkan sebagai nama grup.</li>
+                <li>🎓 Untuk <strong>kelompok Produktif TOI</strong>, ditampilkan <strong>kode mapel</strong> (singkatan) yang telah ditentukan di halaman Guru. Arahkan kursor untuk melihat nama lengkap.</li>
+                <li>🌈 Setiap nilai yang berbeda (baik kode mapel maupun nama grup) memiliki warna latar yang konsisten di seluruh tampilan.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, doc, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDKR4e_9uHBhBqQEdxR7s2R807fawb7J8Y",
+        authDomain: "absensi-toi.firebaseapp.com",
+        projectId: "absensi-toi",
+        storageBucket: "absensi-toi.firebasestorage.app",
+        messagingSenderId: "1069310497322",
+        appId: "1:1069310497322:web:2705d66e041c41a1626953"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const authStatus = document.getElementById('authStatus');
+    const mainContent = document.getElementById('mainContent');
+    const kelasSelect = document.getElementById('kelasSelect');
+    const hariSelect = document.getElementById('hariSelect');
+    const mingguInput = document.getElementById('mingguInput');
+    const tampilkanBtn = document.getElementById('tampilkanBtn');
+    const tableHeader = document.getElementById('tableHeader');
+    const tableBody = document.getElementById('tableBody');
+
+    // Data global
+    let kelasList = [];              // [{ id, nama }]
+    let classSchedule = null;       // { Senin: {1: "Matematika", ...}, ... }
+    let siswaList = [];             // [{ id, no, nama }]
+    let studentSchedules = new Map(); // key: studentId, value: { minggu: { "1": "mapel lengkap", ... } }
+    let mapelKodeMap = new Map();   // key: nama mapel lengkap (string), value: kode (string)
+    let colorMap = new Map();       // key: display text (kode/grup), value: warna CSS
+
+    const JP_COUNT = 10;
+    const TARGET_GROUP = "Produktif TOI";
+
+    // Palet warna pastel yang nyaman (20 warna)
+    const COLOR_PALETTE = [
+        '#FFF3CD', '#D9EAD3', '#FCE5CD', '#D0E0E3', '#F4CCCC',
+        '#C9DAF8', '#FCE5F1', '#E6D5B8', '#D5E8D4', '#F8CECC',
+        '#FFE6CC', '#CCE5FF', '#E1D5E7', '#FFD966', '#B6D7A8',
+        '#F9CB9C', '#9FC5E8', '#EAD1DC', '#F1C232', '#93C47D'
+    ];
+    let colorIndex = 0;
+
+    function getColorForText(text) {
+        if (!text) return null;
+        if (colorMap.has(text)) return colorMap.get(text);
+        const color = COLOR_PALETTE[colorIndex % COLOR_PALETTE.length];
+        colorMap.set(text, color);
+        colorIndex++;
+        return color;
+    }
+
+    // ==================== LOAD KELAS ====================
+    async function loadKelas() {
+        const kelasSnapshot = await getDocs(collection(db, "kelas"));
+        kelasList = [];
+        kelasSnapshot.forEach(doc => {
+            kelasList.push({ id: doc.id, nama: doc.data().nama });
+        });
+        kelasList.sort((a, b) => a.nama.localeCompare(b.nama, 'id', { sensitivity: 'base' }));
+        
+        kelasSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+        kelasList.forEach(kelas => {
+            const option = document.createElement('option');
+            option.value = kelas.id;
+            option.textContent = kelas.nama;
+            kelasSelect.appendChild(option);
+        });
+    }
+
+    // ==================== LOAD PETA KODE MAPEL DARI GURU (hanya Produktif TOI) ====================
+    async function loadMapelKodeMap() {
+        const guruSnapshot = await getDocs(collection(db, "guru"));
+        const newMap = new Map();
+        guruSnapshot.forEach(doc => {
+            const mapelList = doc.data().mapel || [];
+            mapelList.forEach(item => {
+                if (item.kelompok === TARGET_GROUP && item.mapel && item.mapel.trim() !== "") {
+                    const kode = item.kode || generateKodeFromMapel(item.mapel);
+                    newMap.set(item.mapel.trim(), kode);
+                }
+            });
+        });
+        return newMap;
+    }
+
+    // Helper: generate kode dari nama mapel (jika tidak ada di data guru)
+    function generateKodeFromMapel(mapel) {
+        if (!mapel) return '';
+        const words = mapel.trim().split(/\s+/);
+        let initials = words.map(word => word.charAt(0).toUpperCase()).join('');
+        if (initials.length > 5) initials = initials.substring(0, 5);
+        return initials;
+    }
+
+    // ==================== LOAD JADWAL KELAS ====================
+    async function loadClassSchedule(kelasId) {
+        const jadwalRef = doc(db, "jadwal", kelasId);
+        const jadwalSnap = await getDoc(jadwalRef);
+        if (jadwalSnap.exists()) {
+            return jadwalSnap.data().schedule || {};
+        }
+        return {};
+    }
+
+    // ==================== LOAD SISWA & JADWAL PRIBADI ====================
+    async function loadStudentsAndSchedules(kelasId) {
+        const siswaRef = collection(db, "kelas", kelasId, "siswa");
+        const siswaSnapshot = await getDocs(siswaRef);
+        const siswa = [];
+        siswaSnapshot.forEach(doc => {
+            siswa.push({
+                id: doc.id,
+                no: doc.data().no,
+                nama: doc.data().nama
+            });
+        });
+        siswa.sort((a, b) => a.no - b.no);
+
+        const jadwalMap = new Map();
+        for (const s of siswa) {
+            const jadwalDoc = doc(db, "jadwalSiswa", s.id);
+            const jadwalSnap = await getDoc(jadwalDoc);
+            if (jadwalSnap.exists()) {
+                jadwalMap.set(s.id, jadwalSnap.data());
+            } else {
+                jadwalMap.set(s.id, { minggu: {} });
+            }
+        }
+        return { siswa, jadwalMap };
+    }
+
+    // ==================== RENDER TABEL (dengan kode mapel & warna) ====================
+    function renderTable(hari, minggu) {
+        if (!classSchedule || !siswaList.length) {
+            tableBody.innerHTML = '<tr><td colspan="12">Data tidak lengkap. Periksa kembali kelas yang dipilih.</td></tr>';
+            return;
+        }
+
+        // Header: No, Nama Siswa, JP1...JP10
+        let headerHtml = '<tr><th>No</th><th>Nama Siswa</th>';
+        for (let jp = 1; jp <= JP_COUNT; jp++) {
+            headerHtml += `<th>JP ${jp}<br><span style="font-size:0.7rem; font-weight:normal;">(jadwal kelas)</span></th>`;
+        }
+        headerHtml += '</tr>';
+        tableHeader.innerHTML = headerHtml;
+
+        const daySchedule = classSchedule[hari] || {};
+        let bodyHtml = '';
+        for (const siswa of siswaList) {
+            const studentData = studentSchedules.get(siswa.id) || { minggu: {} };
+            const mingguData = studentData.minggu || {};
+            const selectedMapelFull = mingguData[minggu] || ''; // full name mapel yang dipilih siswa
+
+            bodyHtml += `<tr>`;
+            bodyHtml += `<td>${siswa.no}</td>`;
+            bodyHtml += `<td>${escapeHtml(siswa.nama)}</td>`;
+
+            for (let jp = 1; jp <= JP_COUNT; jp++) {
+                const kelompok = daySchedule[jp] || '';
+                let displayText = '';
+                let tooltipText = '';
+                let isProduktif = false;
+
+                if (kelompok === TARGET_GROUP) {
+                    isProduktif = true;
+                    if (selectedMapelFull) {
+                        // Cari kode dari peta (gunakan full name sebagai key)
+                        const kode = mapelKodeMap.get(selectedMapelFull);
+                        if (kode) {
+                            displayText = kode;
+                            tooltipText = selectedMapelFull;
+                        } else {
+                            // Jika mapel tidak ditemukan di data guru, tampilkan full name dengan tanda
+                            displayText = selectedMapelFull;
+                            tooltipText = selectedMapelFull + ' (tidak ada kode)';
+                        }
+                    } else {
+                        displayText = '(belum diisi)';
+                        tooltipText = 'Belum memilih mapel';
+                    }
+                } else {
+                    displayText = kelompok || '-';
+                    tooltipText = kelompok || '';
+                }
+
+                // Dapatkan warna berdasarkan nilai yang ditampilkan (kode atau grup)
+                const bgColor = getColorForText(displayText);
+                const styleAttr = bgColor ? ` style="background-color: ${bgColor};"` : '';
+                const titleAttr = tooltipText ? ` title="${escapeHtml(tooltipText)}"` : '';
+                bodyHtml += `<td${styleAttr}${titleAttr}>${escapeHtml(displayText)}</td>`;
+            }
+            bodyHtml += `</tr>`;
+        }
+        tableBody.innerHTML = bodyHtml;
+    }
+
+    // ==================== LOAD SEMUA DATA UNTUK KELAS TERPILIH ====================
+    async function loadAllDataForClass(kelasId) {
+        if (!kelasId) return;
+
+        tableBody.innerHTML = '<tr><td colspan="12">⏳ Memuat data kelas, siswa, dan jadwal...</td></tr>';
+        
+        try {
+            // Muat peta kode mapel dari guru
+            mapelKodeMap = await loadMapelKodeMap();
+            // Muat jadwal kelas
+            classSchedule = await loadClassSchedule(kelasId);
+            // Muat siswa dan jadwal pribadi
+            const { siswa, jadwalMap } = await loadStudentsAndSchedules(kelasId);
+            siswaList = siswa;
+            studentSchedules = jadwalMap;
+
+            // Reset warna map agar ulang per kelas (opsional, bisa dipertahankan global)
+            colorMap.clear();
+            colorIndex = 0;
+
+            // Render sesuai pilihan
+            const hari = hariSelect.value;
+            const minggu = parseInt(mingguInput.value) || 1;
+            renderTable(hari, minggu);
+        } catch (error) {
+            console.error("Error loading class data:", error);
+            tableBody.innerHTML = '<tr><td colspan="12">❌ Gagal memuat data. Periksa koneksi atau izin Firebase.</td></tr>';
+        }
+    }
+
+    // ==================== EVENT HANDLER ====================
+    kelasSelect.addEventListener('change', async (e) => {
+        const kelasId = e.target.value;
+        if (kelasId) {
+            await loadAllDataForClass(kelasId);
+        } else {
+            tableBody.innerHTML = '<tr><td colspan="12">Pilih kelas untuk menampilkan jadwal</td></tr>';
+            classSchedule = null;
+            siswaList = [];
+            studentSchedules.clear();
+        }
+    });
+
+    tampilkanBtn.addEventListener('click', () => {
+        if (!kelasSelect.value) {
+            alert("Pilih kelas terlebih dahulu.");
+            return;
+        }
+        const hari = hariSelect.value;
+        const minggu = parseInt(mingguInput.value) || 1;
+        if (minggu < 1) {
+            alert("Minggu minimal 1");
+            return;
+        }
+        renderTable(hari, minggu);
+    });
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // ==================== AUTENTIKASI ====================
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            authStatus.style.display = 'none';
+            mainContent.style.display = 'block';
+            loadKelas().catch(console.error);
+        } else {
+            authStatus.innerHTML = '🔄 Melakukan login anonim...';
+            signInAnonymously(auth).catch((error) => {
+                console.error("Gagal login anonim:", error);
+                authStatus.innerHTML = '❌ Gagal terhubung ke Firebase. Pastikan autentikasi anonim diaktifkan.';
+                authStatus.style.color = 'red';
+            });
+        }
+    });
+</script>
+</body>
+</html>
