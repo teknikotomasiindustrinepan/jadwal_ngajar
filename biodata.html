@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Manajemen Siswa - Teknik Otomasi Industri (Firebase)</title>
+    <!-- Firebase SDK modular (v9+) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, doc, getDocs, addDoc, setDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        
+        // Konfigurasi Firebase (dari user)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDKR4e_9uHBhBqQEdxR7s2R807fawb7J8Y",
+            authDomain: "absensi-toi.firebaseapp.com",
+            projectId: "absensi-toi",
+            storageBucket: "absensi-toi.firebasestorage.app",
+            messagingSenderId: "1069310497322",
+            appId: "1:1069310497322:web:2705d66e041c41a1626953"
+        };
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // DOM Elements
+        const kelasInput = document.getElementById('kelasInput');
+        const tambahKelasBtn = document.getElementById('tambahKelasBtn');
+        const kelasSelect = document.getElementById('kelasSelect');
+        const siswaTbody = document.getElementById('siswaTbody');
+        const importCsvBtn = document.getElementById('importCsvBtn');
+        const csvFileInput = document.getElementById('csvFileInput');
+        const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+        
+        // ------------------ Fungsi CRUD Kelas ------------------
+        async function loadKelas() {
+            const kelasSnapshot = await getDocs(collection(db, "kelas"));
+            kelasSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+            kelasSnapshot.forEach(doc => {
+                const kelasData = doc.data();
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = kelasData.nama;
+                kelasSelect.appendChild(option);
+            });
+            // Jika ada kelas, pilih pertama otomatis
+            if (kelasSnapshot.size > 0) {
+                kelasSelect.value = kelasSnapshot.docs[0].id;
+                loadSiswa(kelasSelect.value);
+            } else {
+                siswaTbody.innerHTML = '<tr><td colspan="3">Belum ada kelas. Silakan tambah kelas terlebih dahulu.</td></tr>';
+            }
+        }
+        
+        async function tambahKelas() {
+            const namaKelas = kelasInput.value.trim();
+            if (!namaKelas) {
+                alert("Nama kelas tidak boleh kosong!");
+                return;
+            }
+            try {
+                await addDoc(collection(db, "kelas"), { nama: namaKelas });
+                kelasInput.value = "";
+                loadKelas();
+                alert(`Kelas "${namaKelas}" berhasil ditambahkan!`);
+            } catch (error) {
+                console.error("Error menambah kelas: ", error);
+                alert("Gagal menambah kelas. Periksa koneksi atau izin Firebase.");
+            }
+        }
+        
+        // ------------------ Fungsi CRUD Siswa (subcollection) ------------------
+        async function loadSiswa(kelasId) {
+            if (!kelasId) {
+                siswaTbody.innerHTML = '<tr><td colspan="3">Pilih kelas terlebih dahulu.</td></tr>';
+                return;
+            }
+            try {
+                const siswaRef = collection(db, "kelas", kelasId, "siswa");
+                const siswaSnapshot = await getDocs(siswaRef);
+                if (siswaSnapshot.empty) {
+                    siswaTbody.innerHTML = '<tr><td colspan="3">Belum ada data siswa. Impor CSV atau tambah manual nanti.</td></tr>';
+                    return;
+                }
+                let html = '';
+                siswaSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    html += `
+                        <tr>
+                            <td>${data.no}</td>
+                            <td>${escapeHtml(data.nama)}</td>
+                            <td>
+                                <button class="btn-hapus-siswa" data-id="${doc.id}" data-kelas="${kelasId}">Hapus</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                siswaTbody.innerHTML = html;
+                // Attach event untuk tombol hapus
+                document.querySelectorAll('.btn-hapus-siswa').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const siswaId = btn.getAttribute('data-id');
+                        const kelas = btn.getAttribute('data-kelas');
+                        if (confirm("Hapus siswa ini?")) {
+                            await deleteDoc(doc(db, "kelas", kelas, "siswa", siswaId));
+                            loadSiswa(kelas);
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error("Error load siswa: ", error);
+                siswaTbody.innerHTML = '<tr><td colspan="3">Gagal memuat data siswa.</td></tr>';
+            }
+        }
+        
+        // ------------------ Impor CSV ------------------
+        function parseCSV(csvText) {
+            // asumsi header: no,nama (case insensitive)
+            const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== "");
+            if (lines.length < 2) return [];
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const noIndex = headers.indexOf('no');
+            const namaIndex = headers.indexOf('nama');
+            if (noIndex === -1 || namaIndex === -1) {
+                alert("Format CSV harus memiliki kolom 'no' dan 'nama'. Silakan gunakan template yang disediakan.");
+                return [];
+            }
+            const siswaList = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                if (values.length <= noIndex || values.length <= namaIndex) continue;
+                const no = parseInt(values[noIndex]);
+                const nama = values[namaIndex];
+                if (!isNaN(no) && nama) {
+                    siswaList.push({ no, nama });
+                }
+            }
+            return siswaList;
+        }
+        
+        async function importCSVToKelas(kelasId, file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const csvText = e.target.result;
+                    const siswaList = parseCSV(csvText);
+                    if (siswaList.length === 0) {
+                        reject("Tidak ada data valid dalam CSV.");
+                        return;
+                    }
+                    try {
+                        // Hapus semua siswa yang ada di kelas ini (opsional, sesuai keinginan)
+                        // Untuk menghindari duplikat, kita bisa hapus dulu atau tambahkan.
+                        // Lebih aman: hapus semua siswa lama, lalu impor baru.
+                        const siswaRef = collection(db, "kelas", kelasId, "siswa");
+                        const existing = await getDocs(siswaRef);
+                        const deletePromises = existing.docs.map(docSnap => deleteDoc(docSnap.ref));
+                        await Promise.all(deletePromises);
+                        
+                        // Tambahkan siswa baru
+                        for (const siswa of siswaList) {
+                            await addDoc(siswaRef, { no: siswa.no, nama: siswa.nama });
+                        }
+                        resolve(siswaList.length);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject("Gagal membaca file.");
+                reader.readAsText(file, "UTF-8");
+            });
+        }
+        
+        // Event impor
+        importCsvBtn.addEventListener('click', () => {
+            const kelasId = kelasSelect.value;
+            if (!kelasId) {
+                alert("Pilih kelas terlebih dahulu!");
+                return;
+            }
+            const file = csvFileInput.files[0];
+            if (!file) {
+                alert("Pilih file CSV terlebih dahulu.");
+                return;
+            }
+            importCSVToKelas(kelasId, file)
+                .then(jumlah => {
+                    alert(`Berhasil mengimpor ${jumlah} siswa ke kelas ini.`);
+                    csvFileInput.value = ""; // reset input
+                    loadSiswa(kelasId);
+                })
+                .catch(err => {
+                    alert("Gagal impor: " + err);
+                });
+        });
+        
+        // ------------------ Download Template CSV ------------------
+        function downloadTemplate() {
+            const templateContent = "no,nama\n1,Contoh Siswa 1\n2,Contoh Siswa 2\n3,Contoh Siswa 3";
+            const blob = new Blob(["\uFEFF" + templateContent], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.href = url;
+            link.download = "template_siswa.csv";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+        
+        downloadTemplateBtn.addEventListener('click', downloadTemplate);
+        
+        // Event ketika ganti kelas
+        kelasSelect.addEventListener('change', (e) => {
+            const kelasId = e.target.value;
+            if (kelasId) loadSiswa(kelasId);
+            else siswaTbody.innerHTML = '<tr><td colspan="3">Pilih kelas untuk melihat siswa.</td></tr>';
+        });
+        
+        tambahKelasBtn.addEventListener('click', tambahKelas);
+        
+        // Helper escape HTML
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+        
+        // Load awal
+        loadKelas();
+        
+        // Expose untuk debugging (opsional)
+        window.db = db;
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+        body {
+            background: #eef2f8;
+            padding: 30px 20px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            padding: 28px 32px;
+        }
+        h1 {
+            font-size: 1.7rem;
+            color: #1a4a6f;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        h1 small {
+            font-size: 0.75rem;
+            background: #e9f0f5;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-weight: normal;
+        }
+        .sub {
+            color: #5a6e7c;
+            margin-bottom: 28px;
+            border-left: 4px solid #2c7a4d;
+            padding-left: 16px;
+            font-size: 0.9rem;
+        }
+        .card {
+            background: #f9fbfd;
+            border-radius: 24px;
+            padding: 20px 24px;
+            margin-bottom: 28px;
+            border: 1px solid #e2edf2;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-end;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 180px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #2c6b4f;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 28px;
+            border: 1px solid #cfdfea;
+            background: white;
+            font-size: 0.85rem;
+        }
+        button {
+            background: #2c7a4d;
+            color: white;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: #1e5e3a;
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #2c7a4d;
+            color: #2c7a4d;
+        }
+        .btn-outline:hover {
+            background: #eef5ea;
+            transform: none;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 20px;
+            border: 1px solid #e2edf2;
+            margin-top: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th {
+            background: #eef4fa;
+            padding: 12px 12px;
+            text-align: left;
+            font-weight: 700;
+            color: #1e4a6e;
+            border-bottom: 1px solid #d4e2ef;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ecf3f8;
+        }
+        .btn-hapus-siswa {
+            background: #d9534f;
+            padding: 5px 12px;
+            font-size: 0.7rem;
+            width: auto;
+        }
+        .btn-hapus-siswa:hover {
+            background: #c9302c;
+        }
+        .footer-note {
+            margin-top: 24px;
+            font-size: 0.7rem;
+            text-align: center;
+            color: #6c86a0;
+            background: #f6fafd;
+            padding: 12px;
+            border-radius: 24px;
+        }
+        @media (max-width: 640px) {
+            .container { padding: 18px; }
+            .form-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>
+        📚 Manajemen Siswa & Kelas
+        <small>Teknik Otomasi Industri</small>
+    </h1>
+    <div class="sub">➕ Tambah kelas → Pilih kelas → Impor CSV siswa (template tersedia)</div>
+
+    <!-- Bagian Tambah Kelas -->
+    <div class="card">
+        <div class="form-row">
+            <div class="form-group">
+                <label>🏫 Nama Kelas Baru</label>
+                <input type="text" id="kelasInput" placeholder="Contoh: X TOI 1, XI TOI 2, ...">
+            </div>
+            <div class="form-group">
+                <button id="tambahKelasBtn">+ Tambah Kelas</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bagian Pilih Kelas & Impor CSV -->
+    <div class="card">
+        <div class="form-row">
+            <div class="form-group">
+                <label>📌 Pilih Kelas</label>
+                <select id="kelasSelect">
+                    <option value="">-- Memuat kelas --</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>📂 File CSV (siswa)</label>
+                <input type="file" id="csvFileInput" accept=".csv">
+            </div>
+            <div class="form-group">
+                <button id="importCsvBtn">⬆️ Impor CSV ke Kelas Ini</button>
+            </div>
+            <div class="form-group">
+                <button id="downloadTemplateBtn" class="btn-outline">📎 Download Template CSV</button>
+            </div>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>No</th><th>Nama Siswa</th><th>Aksi</th></tr>
+                </thead>
+                <tbody id="siswaTbody">
+                    <tr><td colspan="3">Pilih kelas untuk melihat daftar siswa</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="footer-note">
+        💡 <strong>Petunjuk:</strong> 
+        <ul style="margin-top: 8px; padding-left: 20px;">
+            <li>1. Tambah kelas (misal: X TOI 1, XI TOI 2, ...) — data tersimpan di Firebase.</li>
+            <li>2. Download template CSV, isi dengan data siswa (kolom <code>no</code> dan <code>nama</code>).</li>
+            <li>3. Pilih kelas yang dituju, lalu unggah file CSV. Sistem akan mengganti semua data siswa di kelas tersebut dengan data baru.</li>
+            <li>4. Anda juga bisa menghapus siswa satu per satu menggunakan tombol "Hapus".</li>
+        </ul>
+        <span style="display: inline-block; margin-top: 10px;">⚡ Data disimpan di Firebase Firestore. Pastikan koneksi internet aktif.</span>
+    </div>
+</div>
+</body>
+</html>
