@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEFA Rotasi - Teknik Otomasi Industri</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 24px 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 28px;
+            padding: 28px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+        }
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .subtitle {
+            color: #475569;
+            margin-bottom: 24px;
+            border-left: 4px solid #4f46e5;
+            padding-left: 16px;
+        }
+        .flex-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 24px;
+            align-items: flex-end;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 180px;
+        }
+        label {
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #334155;
+            letter-spacing: 0.5px;
+        }
+        select, input {
+            padding: 12px 16px;
+            border-radius: 16px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            font-size: 0.9rem;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        button {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
+        }
+        button.secondary {
+            background: #f1f5f9;
+            color: #1e293b;
+            border: 1px solid #cbd5e1;
+        }
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 20px;
+            padding: 32px;
+            text-align: center;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: 0.2s;
+            margin: 16px 0;
+        }
+        .upload-area:hover {
+            border-color: #4f46e5;
+            background: #f1f5ff;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 20px 0;
+            padding: 16px 0;
+            border-top: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+        }
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+        }
+        /* Warna klaster Kelas X */
+        .cluster-KDLE { background-color: #dcfce7; border-left: 3px solid #22c55e; }
+        .cluster-AU { background-color: #fff3cd; border-left: 3px solid #f59e0b; }
+        .cluster-KAP { background-color: #cff4fc; border-left: 3px solid #0ea5e9; }
+        .cluster-DTD { background-color: #e0d4fd; border-left: 3px solid #8b5cf6; }
+        /* Warna klaster Kelas XI */
+        .cluster-SKEM { background-color: #dcfce7; border-left: 3px solid #22c55e; }
+        .cluster-SKE { background-color: #fff3cd; border-left: 3px solid #f59e0b; }
+        .cluster-PSA { background-color: #cff4fc; border-left: 3px solid #0ea5e9; }
+        .cluster-SKEP { background-color: #e0d4fd; border-left: 3px solid #8b5cf6; }
+        /* Warna klaster Kelas XII */
+        .cluster-OTK { background-color: #dcfce7; border-left: 3px solid #22c55e; }
+        .cluster-RBT { background-color: #fff3cd; border-left: 3px solid #f59e0b; }
+        .cluster-MES { background-color: #cff4fc; border-left: 3px solid #0ea5e9; }
+        .cluster-INV { background-color: #ffe0b5; border-left: 3px solid #f97316; }
+        
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 12px 8px;
+            text-align: center;
+        }
+        th {
+            background: #f1f5f9;
+            font-weight: 700;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        td:first-child, th:first-child {
+            position: sticky;
+            left: 0;
+            background: white;
+            font-weight: 600;
+        }
+        th:first-child {
+            background: #f1f5f9;
+        }
+        .info-text {
+            color: #475569;
+            margin: 16px 0;
+            font-size: 0.9rem;
+        }
+        .file-info {
+            background: #eef2ff;
+            border-radius: 16px;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+        }
+        .btn-small {
+            padding: 6px 16px;
+            font-size: 0.75rem;
+        }
+        .week11-note {
+            background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 100%);
+            padding: 16px 20px;
+            border-radius: 20px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #854d0e;
+            border-left: 4px solid #f59e0b;
+        }
+        .stat-badge {
+            display: inline-block;
+            background: #eef2ff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #4f46e5;
+            margin-left: 10px;
+        }
+        @media (max-width: 768px) {
+            th, td { padding: 8px 4px; font-size: 0.7rem; }
+            .card { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="card">
+        <h1><i class="fas fa-industry"></i> Teaching Factory Rotasi</h1>
+        <div class="subtitle">
+            Sistem Manajemen Jadwal TEFA | Teknik Otomasi Industri
+            <br>Kelas: XA, XB, XC | XIA, XIB, XIC | XIIA, XIIB, XIIC
+        </div>
+    </div>
+
+    <!-- Upload Jadwal -->
+    <div class="card">
+        <h2><i class="fas fa-upload"></i> Upload Jadwal TEFA</h2>
+        <div class="info-text">
+            <strong>Format File Excel/CSV:</strong><br>
+            Kolom: <strong>Siswa, Minggu 1, Minggu 2, ..., Minggu 10</strong><br>
+            • <strong>Siswa</strong> ditulis dengan format: <code>KELAS_ABSEN</code> (contoh: XA_1, XB_15, XIA_7, XIIB_23)<br>
+            • <strong>Klaster</strong>: KDLE, AU, KAP, DTD (Kelas X) | SKEM, SKE, PSA, SKEP (Kelas XI) | OTK, RBT, MES, INV (Kelas XII)<br>
+            <a href="#" id="downloadTemplate" style="color:#4f46e5; margin-top: 8px; display: inline-block;">📥 Download Template Contoh</a>
+        </div>
+
+        <div id="uploadArea" class="upload-area">
+            <i class="fas fa-cloud-upload-alt fa-3x"></i>
+            <p style="margin-top: 12px;">Klik atau drag & drop file Excel/CSV di sini</p>
+        </div>
+        <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" style="display: none;">
+        <div id="fileInfo" style="display: none;" class="file-info">
+            <span><i class="fas fa-file-excel"></i> <span id="fileName"></span></span>
+            <button id="clearBtn" class="secondary btn-small">Hapus</button>
+        </div>
+        <div id="uploadStatus" class="info-text"></div>
+    </div>
+
+    <!-- Dashboard Jadwal -->
+    <div class="card">
+        <h2><i class="fas fa-calendar-alt"></i> Dashboard Rotasi TEFA</h2>
+        
+        <div class="flex-row">
+            <div class="form-group">
+                <label><i class="fas fa-school"></i> Pilih Kelas</label>
+                <select id="classSelect">
+                    <option value="">-- Pilih Kelas --</option>
+                    <optgroup label="Kelas X">
+                        <option value="XA">XA</option>
+                        <option value="XB">XB</option>
+                        <option value="XC">XC</option>
+                    </optgroup>
+                    <optgroup label="Kelas XI">
+                        <option value="XIA">XIA</option>
+                        <option value="XIB">XIB</option>
+                        <option value="XIC">XIC</option>
+                    </optgroup>
+                    <optgroup label="Kelas XII">
+                        <option value="XIIA">XIIA</option>
+                        <option value="XIIB">XIIB</option>
+                        <option value="XIIC">XIIC</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-hashtag"></i> Rentang Absen (opsional)</label>
+                <input type="text" id="absenRange" placeholder="1-40 atau kosongkan semua">
+            </div>
+            <button id="refreshDashboard"><i class="fas fa-eye"></i> Tampilkan Jadwal</button>
+        </div>
+
+        <!-- Legenda -->
+        <div id="legendContainer" class="legend"></div>
+
+        <!-- Tabel Jadwal -->
+        <div id="dashboardContainer">
+            <div class="info-text">📂 Belum ada data. Upload file jadwal terlebih dahulu.</div>
+        </div>
+
+        <!-- Catatan Minggu ke-11 -->
+        <div id="week11Note" class="week11-note" style="display: none;"></div>
+    </div>
+</div>
+
+<!-- SheetJS -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<script>
+    // Storage
+    const STORAGE_KEY = "tefa_schedule_data";
+
+    function saveSchedule(data) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function loadSchedule() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+    }
+
+    // Parse file
+    function parseFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+                const filtered = rows.filter(row => row && row.some(cell => cell && cell.toString().trim()));
+                if (filtered.length < 2) reject(new Error("File kosong"));
+                
+                const headers = filtered[0];
+                if (!headers || headers.length < 2 || !headers[0].toString().toLowerCase().includes("siswa")) {
+                    reject(new Error("Kolom pertama harus 'Siswa'"));
+                }
+                resolve({ headers, rows: filtered.slice(1) });
+            };
+            reader.onerror = () => reject(new Error("Gagal membaca file"));
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    async function processFile(file) {
+        try {
+            const { headers, rows } = await parseFile(file);
+            saveSchedule({ headers, rows });
+            document.getElementById("uploadStatus").innerHTML = '<span style="color:#10b981;">✓ Jadwal berhasil disimpan!</span>';
+            renderLegend();
+            renderDashboard();
+        } catch (err) {
+            document.getElementById("uploadStatus").innerHTML = `<span style="color:#dc2626;">✗ ${err.message}</span>`;
+        }
+    }
+
+    // Get warna klaster
+    function getClusterClass(cluster) {
+        const map = {
+            'KDLE': 'cluster-KDLE', 'AU': 'cluster-AU', 'KAP': 'cluster-KAP', 'DTD': 'cluster-DTD',
+            'SKEM': 'cluster-SKEM', 'SKE': 'cluster-SKE', 'PSA': 'cluster-PSA', 'SKEP': 'cluster-SKEP',
+            'OTK': 'cluster-OTK', 'RBT': 'cluster-RBT', 'MES': 'cluster-MES', 'INV': 'cluster-INV'
+        };
+        return map[cluster] || '';
+    }
+
+    // Render legend berdasarkan data
+    function renderLegend() {
+        const schedule = loadSchedule();
+        if (!schedule) {
+            document.getElementById("legendContainer").innerHTML = '<div class="legend-item">Upload jadwal untuk melihat legenda</div>';
+            return;
+        }
+        
+        const clusters = new Set();
+        schedule.rows.forEach(row => {
+            for (let i = 1; i <= 10; i++) {
+                let val = row[i];
+                if (val && typeof val === 'string') clusters.add(val.trim());
+            }
+        });
+        
+        if (clusters.size === 0) {
+            document.getElementById("legendContainer").innerHTML = '<div class="legend-item">Tidak ada klaster terdeteksi</div>';
+            return;
+        }
+        
+        let html = '';
+        Array.from(clusters).sort().forEach(cluster => {
+            html += `<div class="legend-item"><div class="legend-color ${getClusterClass(cluster)}"></div> ${cluster}</div>`;
+        });
+        document.getElementById("legendContainer").innerHTML = html;
+    }
+
+    // Render dashboard
+    function renderDashboard() {
+        const schedule = loadSchedule();
+        if (!schedule || !schedule.rows || schedule.rows.length === 0) {
+            document.getElementById("dashboardContainer").innerHTML = '<div class="info-text">📂 Belum ada jadwal. Upload file terlebih dahulu.</div>';
+            document.getElementById("week11Note").style.display = 'none';
+            return;
+        }
+        
+        const kelas = document.getElementById("classSelect").value;
+        if (!kelas) {
+            document.getElementById("dashboardContainer").innerHTML = '<div class="info-text">👈 Pilih kelas terlebih dahulu</div>';
+            document.getElementById("week11Note").style.display = 'none';
+            return;
+        }
+        
+        const rangeText = document.getElementById("absenRange").value;
+        let minAbsen = 1, maxAbsen = 999;
+        if (rangeText) {
+            const parts = rangeText.split('-');
+            minAbsen = parseInt(parts[0]) || 1;
+            maxAbsen = parseInt(parts[1]) || 999;
+        }
+        
+        // Filter siswa berdasarkan kelas dan range absen
+        const filtered = schedule.rows.filter(row => {
+            const siswa = row[0] ? row[0].toString() : "";
+            const match = siswa.match(/^([A-Z]+)(\d+)$/i);
+            if (!match) return false;
+            const kelasSiswa = match[1].toUpperCase();
+            const absen = parseInt(match[2]);
+            return kelasSiswa === kelas && absen >= minAbsen && absen <= maxAbsen;
+        });
+        
+        if (filtered.length === 0) {
+            document.getElementById("dashboardContainer").innerHTML = `<div class="info-text">⚠️ Tidak ditemukan siswa untuk kelas ${kelas} dengan rentang absen ${rangeText || 'semua'}</div>`;
+            document.getElementById("week11Note").style.display = 'none';
+            return;
+        }
+        
+        // Buat tabel
+        const headers = schedule.headers;
+        let html = `<div class="table-wrapper">\(<thead><tr>`;
+        headers.forEach(h => html += `<th>${h}</th>`);
+        html += `</tr></thead><tbody>`;
+        
+        filtered.forEach(row => {
+            html += `<tr>`;
+            for (let j = 0; j < headers.length; j++) {
+                let cell = row[j] !== undefined ? row[j] : "";
+                let className = "";
+                if (j >= 1 && cell) {
+                    className = getClusterClass(cell);
+                }
+                html += `<td class="${className}">${cell}</td>`;
+            }
+            html += `</tr>`;
+        });
+        html += `</tbody></table></div>`;
+        document.getElementById("dashboardContainer").innerHTML = html;
+        
+        // Catatan minggu ke-11
+        let noteText = '';
+        if (kelas.startsWith('X') && !kelas.startsWith('XI')) {
+            noteText = '🎯 Minggu ke-11: Projek Inovasi (Implementasi hasil pembelajaran TEFA)';
+        } else if (kelas.startsWith('XI')) {
+            noteText = '🎯 Minggu ke-11: Ujian Klaster BNSP (Sertifikasi Kompetensi)';
+        } else if (kelas.startsWith('XII')) {
+            noteText = '🎯 Minggu ke-11: Pameran Produk / TEFA Expo atau Magang Industri Terstruktur';
+        }
+        const noteDiv = document.getElementById("week11Note");
+        noteDiv.innerHTML = noteText;
+        noteDiv.style.display = 'block';
+    }
+
+    // Event handlers
+    const uploadArea = document.getElementById("uploadArea");
+    const fileInput = document.getElementById("fileInput");
+    const fileInfo = document.getElementById("fileInfo");
+    const fileName = document.getElementById("fileName");
+    const clearBtn = document.getElementById("clearBtn");
+    const refreshBtn = document.getElementById("refreshDashboard");
+    const classSelect = document.getElementById("classSelect");
+    const absenRange = document.getElementById("absenRange");
+
+    uploadArea.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", (e) => {
+        if (e.target.files.length) {
+            const file = e.target.files[0];
+            fileName.innerText = file.name;
+            fileInfo.style.display = "flex";
+            processFile(file);
+        }
+    });
+    
+    clearBtn.addEventListener("click", () => {
+        fileInput.value = "";
+        fileInfo.style.display = "none";
+        localStorage.removeItem(STORAGE_KEY);
+        document.getElementById("uploadStatus").innerHTML = "";
+        renderLegend();
+        renderDashboard();
+        document.getElementById("week11Note").style.display = 'none';
+    });
+    
+    refreshBtn.addEventListener("click", () => renderDashboard());
+    classSelect.addEventListener("change", () => renderDashboard());
+    absenRange.addEventListener("change", () => renderDashboard());
+    
+    // Drag & drop
+    uploadArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = "#4f46e5";
+    });
+    uploadArea.addEventListener("dragleave", () => {
+        uploadArea.style.borderColor = "#cbd5e1";
+    });
+    uploadArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = "#cbd5e1";
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            fileName.innerText = file.name;
+            fileInfo.style.display = "flex";
+            processFile(file);
+        }
+    });
+    
+    // Download template
+    document.getElementById("downloadTemplate").addEventListener("click", (e) => {
+        e.preventDefault();
+        const template = [
+            ["Siswa", "Minggu 1", "Minggu 2", "Minggu 3", "Minggu 4", "Minggu 5", "Minggu 6", "Minggu 7", "Minggu 8", "Minggu 9", "Minggu 10"],
+            ["XA_1", "KDLE", "KDLE", "KDLE", "KAP", "KAP", "KAP", "AU", "AU", "DTD", "DTD"],
+            ["XA_2", "KDLE", "KDLE", "KAP", "KAP", "KAP", "AU", "AU", "DTD", "DTD", "KDLE"],
+            ["XB_1", "KDLE", "KAP", "KAP", "KAP", "AU", "AU", "DTD", "DTD", "KDLE", "KDLE"],
+            ["XIA_1", "SKEM", "SKEM", "SKEM", "SKE", "SKE", "SKE", "PSA", "PSA", "SKEP", "SKEP"],
+            ["XIA_2", "SKEM", "SKEM", "SKE", "SKE", "SKE", "PSA", "PSA", "SKEP", "SKEP", "SKEM"],
+            ["XIIA_1", "OTK", "OTK", "RBT", "RBT", "MES", "MES", "INV", "INV", "OTK", "RBT"]
+        ];
+        const csv = template.map(row => row.join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "template_jadwal_tefa.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+    
+    // Initial load
+    if (loadSchedule()) {
+        renderLegend();
+        renderDashboard();
+    } else {
+        renderLegend();
+    }
+</script>
+</body>
+</html>
