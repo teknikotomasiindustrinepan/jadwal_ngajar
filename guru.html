@@ -149,10 +149,6 @@
             margin-bottom: 4px;
             line-height: 1.3;
         }
-        .mapel-kelompok {
-            font-weight: 600;
-            color: #2c7a4d;
-        }
         .footer-note {
             margin-top: 24px;
             font-size: 0.7rem;
@@ -293,7 +289,7 @@
                         </tr>
                     </thead>
                     <tbody id="guruTbody">
-                        <tr><td colspan="6">Memuat data guru...</td> </tr>
+                        <tr><td colspan="6">Memuat data guru...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -304,7 +300,6 @@
         💡 <strong>Petunjuk:</strong><br>
         • Tambah guru: isi nama, lalu gunakan tombol "Edit Mapel" untuk menambahkan kelompok, nama mapel, dan kode mapel (opsional).<br>
         • Impor CSV: gunakan template dengan kolom <code>nama,kelompok,mapel,kode</code>. Baris dapat diulang untuk satu guru dengan mapel berbeda. Data akan digabung otomatis.<br>
-        • Format CSV: <code>"Irffan Saktiansyah, S.T","Sistem Kontrol","Sistem Kontrol Elektromekanik","SKE"</code><br>
         • Kode mapel akan ditampilkan di kolom terpisah untuk memudahkan pemilihan di halaman jadwal.<br>
         • Data otomatis diurutkan berdasarkan nama guru (A-Z) dan diberi nomor urut.
     </div>
@@ -329,7 +324,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -459,12 +454,12 @@
             });
             guruTbody.innerHTML = html;
             
-            // Event edit mapel
+            // Pasang event listener untuk tombol edit mapel (setelah HTML di-inject)
             document.querySelectorAll('.btn-edit-mapel').forEach(btn => {
-                btn.addEventListener('click', () => {
+                btn.addEventListener('click', async (e) => {
                     const guruId = btn.getAttribute('data-id');
                     const guruNama = btn.getAttribute('data-nama');
-                    openModal(guruId, guruNama);
+                    await openModal(guruId, guruNama);
                 });
             });
             
@@ -489,21 +484,26 @@
     async function openModal(guruId, guruNama) {
         currentEditingGuruId = guruId;
         modalGuruNama.innerText = guruNama;
-        // Ambil data mapel terbaru dari firestore
-        const guruRef = doc(db, "guru", guruId);
-        const guruSnap = await getDoc(guruRef);
-        if (guruSnap.exists()) {
-            let mapels = guruSnap.data().mapel || [];
-            currentMapelArray = mapels.map(m => ({
-                kelompok: m.kelompok || '',
-                mapel: m.mapel || '',
-                kode: m.kode || (m.mapel ? generateKodeFromMapel(m.mapel) : '')
-            }));
-        } else {
-            currentMapelArray = [];
+        try {
+            // Ambil data mapel terbaru dari firestore
+            const guruRef = doc(db, "guru", guruId);
+            const guruSnap = await getDoc(guruRef);
+            if (guruSnap.exists()) {
+                let mapels = guruSnap.data().mapel || [];
+                currentMapelArray = mapels.map(m => ({
+                    kelompok: m.kelompok || '',
+                    mapel: m.mapel || '',
+                    kode: m.kode || (m.mapel ? generateKodeFromMapel(m.mapel) : '')
+                }));
+            } else {
+                currentMapelArray = [];
+            }
+            renderMapelForm();
+            modal.style.display = 'flex';
+        } catch (error) {
+            console.error("Error opening modal:", error);
+            alert("Gagal memuat data mapel.");
         }
-        renderMapelForm();
-        modal.style.display = 'flex';
     }
 
     function renderMapelForm() {
@@ -544,9 +544,15 @@
                 // Jika kode kosong, generate otomatis dari nama mapel
                 if (!currentMapelArray[idx].kode) {
                     const generated = generateKodeFromMapel(inp.value);
-                    const kodeInput = div.querySelector('.kode-input');
-                    if (kodeInput) kodeInput.value = generated;
-                    currentMapelArray[idx].kode = generated;
+                    // Cari input kode di baris ini dan update nilainya
+                    const rowDiv = inp.closest('.mapel-row');
+                    if (rowDiv) {
+                        const kodeInput = rowDiv.querySelector('.kode-input');
+                        if (kodeInput) {
+                            kodeInput.value = generated;
+                            currentMapelArray[idx].kode = generated;
+                        }
+                    }
                 }
             });
         });
