@@ -58,7 +58,6 @@
             flex-wrap: wrap;
             gap: 16px;
             align-items: flex-end;
-            margin-bottom: 16px;
         }
         .form-group {
             flex: 1;
@@ -143,9 +142,6 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        select option {
-            white-space: normal;
-        }
         .loading {
             text-align: center;
             padding: 40px;
@@ -175,6 +171,11 @@
             display: flex;
             gap: 10px;
         }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #8aa0b0;
+        }
         @media (max-width: 700px) {
             .container { padding: 18px; }
             .form-row { flex-direction: column; }
@@ -188,7 +189,7 @@
         📅 Jadwal Per Siswa
         <small>Teknik Otomasi Industri</small>
     </h1>
-    <div class="sub">Menampilkan jadwal mingguan siswa untuk mata pelajaran dari kelompok <strong>"Produktif TOI"</strong></div>
+    <div class="sub">Menampilkan jadwal mingguan siswa untuk mata pelajaran dari kelompok <strong>"Produktif TOI"</strong> (pilih kode mapel)</div>
 
     <div id="authStatus" class="loading">⏳ Menghubungkan ke Firebase...</div>
 
@@ -226,7 +227,7 @@
                     <button id="importCsvBtn" class="btn-secondary">⬆️ Impor CSV</button>
                 </div>
                 <div class="form-group">
-                    <span style="font-size:0.75rem; color:#6c86a0;">Gunakan kode mapel (singkatan) yang ada di halaman Guru</span>
+                    <span style="font-size:0.75rem; color:#6c86a0;">Isi dengan kode mapel (singkatan) yang ada di halaman Guru</span>
                 </div>
             </div>
         </div>
@@ -242,13 +243,13 @@
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <tr><td colspan="2">Pilih kelas untuk menampilkan data</td></tr>
+                    <tr><td colspan="2">Pilih kelas untuk menampilkan数据</td></tr>
                 </tbody>
             </table>
         </div>
         <div class="footer-note">
-            💡 <strong>Petunjuk:</strong> Pilih kelas yang memiliki mata pelajaran Produktif TOI. Untuk setiap siswa, pilih mapel dari daftar yang tersedia per minggu. Perubahan akan langsung disimpan. <br>
-            📥 <strong>Impor CSV:</strong> Gunakan template CSV (tombol Template CSV) dengan kolom: <code>No, Nama Siswa, Minggu 1, Minggu 2, ...</code>. Isi dengan kode mapel (singkatan) yang terdaftar di halaman Guru. Sistem akan mencocokkan kode ke nama mapel lengkap.
+            💡 <strong>Petunjuk:</strong> Pilih kelas yang memiliki mata pelajaran Produktif TOI. Untuk setiap siswa, pilih kode mapel dari dropdown per minggu. Perubahan akan langsung disimpan. <br>
+            📥 <strong>Impor CSV:</strong> Gunakan template CSV (tombol Template CSV) dengan kolom: <code>No, Nama Siswa, Minggu 1, Minggu 2, ...</code>. Isi dengan kode mapel yang terdaftar di halaman Guru.
         </div>
     </div>
 </div>
@@ -288,17 +289,34 @@
     let kelasValid = [];
     let currentKelasId = null;
     let currentJumlahMinggu = 11;
-    let daftarMapelTOI = []; // array of {kode, mapel}
-    let siswaList = []; // [{ id, no, nama }]
-    let jadwalSiswaMap = new Map(); // key: siswaId, value: object minggu { "1": mapel, ... }
+    let daftarKodeMapel = [];      // array of { kode, namaMapel, kelompok } - hanya kode untuk dropdown
+    let siswaList = [];             // [{ id, no, nama }]
+    let jadwalSiswaMap = new Map(); // key: siswaId, value: object minggu { "1": kodeMapel, ... }
 
-    // Helper: buat singkatan (untuk tampilan dropdown)
-    function getAbbreviation(mapel) {
-        if (!mapel) return '';
-        const words = mapel.trim().split(/\s+/);
-        let initials = words.map(word => word.charAt(0).toUpperCase()).join('');
-        if (initials.length > 5) initials = initials.substring(0, 5);
-        return initials;
+    // ==================== AMBIL DAFTAR KODE MAPEL PRODUKTIF TOI ====================
+    async function loadKodeMapelProduktifTOI() {
+        const guruSnapshot = await getDocs(collection(db, "guru"));
+        const mapelSet = new Map(); // key: kode, value: { kode, namaMapel, kelompok }
+        
+        guruSnapshot.forEach(doc => {
+            const mapels = doc.data().mapel || [];
+            mapels.forEach(item => {
+                if (item.kelompok === "Produktif TOI" && item.mapel && item.mapel.trim() !== "") {
+                    const kode = item.kode || item.mapel.substring(0, 3).toUpperCase();
+                    if (!mapelSet.has(kode)) {
+                        mapelSet.set(kode, {
+                            kode: kode,
+                            namaMapel: item.mapel,
+                            kelompok: item.kelompok
+                        });
+                    }
+                }
+            });
+        });
+        
+        // Konversi ke array dan urutkan berdasarkan kode
+        daftarKodeMapel = Array.from(mapelSet.values()).sort((a, b) => a.kode.localeCompare(b.kode));
+        return daftarKodeMapel;
     }
 
     // ==================== AMBIL KELAS DENGAN PRODUKTIF TOI ====================
@@ -336,31 +354,6 @@
         return kelasValidTemp;
     }
 
-    // ==================== AMBIL DAFTAR MAPEL PRODUKTIF TOI (dengan kode) ====================
-    async function loadMapelProduktifTOI() {
-        const guruSnapshot = await getDocs(collection(db, "guru"));
-        const mapelList = [];
-        const mapelSet = new Set();
-        guruSnapshot.forEach(doc => {
-            const mapels = doc.data().mapel || [];
-            mapels.forEach(item => {
-                if (item.kelompok === "Produktif TOI" && item.mapel && item.mapel.trim() !== "") {
-                    const key = item.mapel.trim();
-                    if (!mapelSet.has(key)) {
-                        mapelSet.add(key);
-                        mapelList.push({
-                            mapel: key,
-                            kode: item.kode || getAbbreviation(key)
-                        });
-                    }
-                }
-            });
-        });
-        // Urutkan berdasarkan nama mapel
-        mapelList.sort((a, b) => a.mapel.localeCompare(b.mapel, 'id', { sensitivity: 'base' }));
-        return mapelList;
-    }
-
     // ==================== AMBIL SISWA DARI KELAS ====================
     async function loadSiswaByKelas(kelasId) {
         const siswaRef = collection(db, "kelas", kelasId, "siswa");
@@ -393,7 +386,7 @@
     }
 
     // ==================== SIMPAN JADWAL SISWA ====================
-    async function simpanJadwalSiswa(siswaId, mingguKe, mapel) {
+    async function simpanJadwalSiswa(siswaId, mingguKe, kodeMapel) {
         if (!siswaId) return;
         const jadwalRef = doc(db, "jadwalSiswa", siswaId);
         try {
@@ -402,10 +395,10 @@
             if (docSnap.exists()) {
                 existing = docSnap.data().minggu || {};
             }
-            if (mapel === "") {
+            if (kodeMapel === "") {
                 delete existing[mingguKe];
             } else {
-                existing[mingguKe] = mapel;
+                existing[mingguKe] = kodeMapel;  // simpan hanya kode mapel
             }
             await setDoc(jadwalRef, { minggu: existing, kelasId: currentKelasId }, { merge: true });
         } catch (error) {
@@ -414,7 +407,7 @@
         }
     }
 
-    // ==================== RENDER TABEL (dengan kolom No) ====================
+    // ==================== RENDER TABEL (dengan dropdown kode mapel) ====================
     function renderTable() {
         if (!currentKelasId || siswaList.length === 0) {
             tableBody.innerHTML = '<tr><td colspan="2">Tidak ada siswa di kelas ini</td></tr>';
@@ -429,6 +422,12 @@
         headerHtml += '</tr>';
         tableHeader.innerHTML = headerHtml;
 
+        // Buat opsi dropdown (hanya kode mapel)
+        let optionsHtml = '<option value="">-- Pilih --</option>';
+        daftarKodeMapel.forEach(item => {
+            optionsHtml += `<option value="${escapeHtml(item.kode)}">${escapeHtml(item.kode)}</option>`;
+        });
+
         // Build body
         let bodyHtml = '';
         for (const siswa of siswaList) {
@@ -436,17 +435,21 @@
             const mingguData = jadwalSiswaMap.get(siswaId) || {};
             bodyHtml += `<tr data-siswa-id="${siswaId}">`;
             bodyHtml += `<td>${siswa.no}</td>`;
-            bodyHtml += `<td>${escapeHtml(siswa.nama)}</td>`;
+            bodyHtml += `<td><strong>${escapeHtml(siswa.nama)}</strong></td>`;
             for (let i = 1; i <= currentJumlahMinggu; i++) {
-                const selectedMapel = mingguData[i] || '';
-                let options = '<option value="">-- Pilih --</option>';
-                daftarMapelTOI.forEach(item => {
-                    const abbr = item.kode || getAbbreviation(item.mapel);
-                    const optionText = `${abbr} - ${item.mapel}`;
-                    const selected = (item.mapel === selectedMapel) ? 'selected' : '';
-                    options += `<option value="${escapeHtml(item.mapel)}" ${selected} title="${escapeHtml(item.mapel)}">${escapeHtml(optionText)}</option>`;
-                });
-                bodyHtml += `<td><select class="mapel-select" data-siswa-id="${siswaId}" data-minggu="${i}" style="max-width:130px; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(selectedMapel)}">${options}</select></td>`;
+                const selectedKode = mingguData[i] || '';
+                let selectedHtml = '';
+                if (selectedKode) {
+                    selectedHtml = `<option value="${escapeHtml(selectedKode)}" selected>${escapeHtml(selectedKode)}</option>`;
+                }
+                bodyHtml += `
+                    <td>
+                        <select class="mapel-select" data-siswa-id="${siswaId}" data-minggu="${i}" style="max-width:100px;">
+                            ${optionsHtml}
+                            ${selectedHtml}
+                        </select>
+                    </td>
+                `;
             }
             bodyHtml += '</tr>';
         }
@@ -457,14 +460,13 @@
             select.addEventListener('change', async (e) => {
                 const siswaId = select.getAttribute('data-siswa-id');
                 const minggu = parseInt(select.getAttribute('data-minggu'));
-                const mapel = select.value;
-                await simpanJadwalSiswa(siswaId, minggu, mapel);
+                const kodeMapel = select.value;
+                await simpanJadwalSiswa(siswaId, minggu, kodeMapel);
                 if (!jadwalSiswaMap.has(siswaId)) jadwalSiswaMap.set(siswaId, {});
                 const current = jadwalSiswaMap.get(siswaId);
-                if (mapel === "") delete current[minggu];
-                else current[minggu] = mapel;
+                if (kodeMapel === "") delete current[minggu];
+                else current[minggu] = kodeMapel;
                 jadwalSiswaMap.set(siswaId, current);
-                select.setAttribute('title', mapel || '');
             });
         });
     }
@@ -478,10 +480,6 @@
         tableBody.innerHTML = '<tr><td colspan="2">⏳ Memuat data siswa...</td></tr>';
 
         try {
-            if (daftarMapelTOI.length === 0) {
-                daftarMapelTOI = await loadMapelProduktifTOI();
-            }
-
             siswaList = await loadSiswaByKelas(kelasId);
             if (siswaList.length === 0) {
                 tableBody.innerHTML = '<tr><td colspan="2">Belum ada siswa di kelas ini.</td></tr>';
@@ -518,7 +516,7 @@
         }
     }
 
-    // ==================== EKSPOR CSV (dengan kolom No) ====================
+    // ==================== EKSPOR CSV ====================
     function exportToCSV() {
         if (!currentKelasId || siswaList.length === 0) {
             alert("Tidak ada data untuk diekspor.");
@@ -534,8 +532,8 @@
             const mingguData = jadwalSiswaMap.get(siswa.id) || {};
             const row = [siswa.no, siswa.nama];
             for (let i = 1; i <= currentJumlahMinggu; i++) {
-                let mapel = mingguData[i] || '';
-                row.push(mapel);
+                let kode = mingguData[i] || '';
+                row.push(kode);
             }
             csvRows.push(row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','));
         }
@@ -551,7 +549,7 @@
         URL.revokeObjectURL(url);
     }
 
-    // ==================== TEMPLATE CSV (dengan kolom No) ====================
+    // ==================== TEMPLATE CSV ====================
     function downloadTemplate() {
         let headers = ['No', 'Nama Siswa'];
         for (let i = 1; i <= currentJumlahMinggu; i++) {
@@ -576,7 +574,7 @@
         URL.revokeObjectURL(url);
     }
 
-    // ==================== IMPOR CSV (menggunakan kode mapel) ====================
+    // ==================== IMPOR CSV ====================
     function parseCSVLine(line) {
         const result = [];
         let current = '';
@@ -612,21 +610,18 @@
                     return;
                 }
                 const header = parseCSVLine(lines[0]);
-                // Cari indeks kolom: No (opsional), Nama Siswa, dan Minggu
-                const noIndex = header.findIndex(h => h.toLowerCase() === 'no');
                 const namaIndex = header.findIndex(h => h.toLowerCase() === 'nama siswa');
                 if (namaIndex === -1) {
                     reject("CSV harus memiliki kolom 'Nama Siswa'.");
                     return;
                 }
-                // Kumpulkan data per baris
+                
                 const rows = [];
                 for (let i = 1; i < lines.length; i++) {
                     const fields = parseCSVLine(lines[i]);
                     if (fields.length <= namaIndex) continue;
                     const nama = fields[namaIndex];
                     if (!nama) continue;
-                    const no = (noIndex !== -1 && fields.length > noIndex) ? fields[noIndex] : '';
                     const mingguData = {};
                     for (let m = 1; m <= currentJumlahMinggu; m++) {
                         const mingguHeader = `Minggu ${m}`;
@@ -634,17 +629,17 @@
                         if (mingguIdx !== -1 && fields.length > mingguIdx) {
                             const kode = fields[mingguIdx];
                             if (kode) {
-                                // Cari mapel berdasarkan kode
-                                const mapelItem = daftarMapelTOI.find(item => item.kode === kode);
-                                if (mapelItem) {
-                                    mingguData[m] = mapelItem.mapel;
+                                // Validasi apakah kode ada di daftar kode mapel
+                                const isValid = daftarKodeMapel.some(item => item.kode === kode);
+                                if (isValid) {
+                                    mingguData[m] = kode;
                                 } else {
                                     console.warn(`Kode "${kode}" tidak dikenal untuk siswa ${nama} minggu ${m}`);
                                 }
                             }
                         }
                     }
-                    rows.push({ nama, no, minggu: mingguData });
+                    rows.push({ nama, minggu: mingguData });
                 }
                 resolve(rows);
             };
@@ -669,7 +664,6 @@
                 alert("Tidak ada data valid dalam CSV.");
                 return;
             }
-            // Proses impor: untuk setiap siswa, cari berdasarkan nama (case-insensitive)
             let updatedCount = 0;
             for (const imp of importedData) {
                 const siswa = siswaList.find(s => s.nama.toLowerCase() === imp.nama.toLowerCase());
@@ -677,21 +671,16 @@
                     console.warn(`Siswa "${imp.nama}" tidak ditemukan di kelas ini.`);
                     continue;
                 }
-                // Ambil jadwal yang ada
                 let currentMinggu = jadwalSiswaMap.get(siswa.id) || {};
-                // Gabungkan dengan data impor (overwrite)
-                for (const [minggu, mapel] of Object.entries(imp.minggu)) {
-                    currentMinggu[minggu] = mapel;
+                for (const [minggu, kode] of Object.entries(imp.minggu)) {
+                    currentMinggu[minggu] = kode;
                 }
-                // Simpan ke Firebase
                 const jadwalRef = doc(db, "jadwalSiswa", siswa.id);
                 await setDoc(jadwalRef, { minggu: currentMinggu, kelasId: currentKelasId }, { merge: true });
-                // Update map lokal
                 jadwalSiswaMap.set(siswa.id, currentMinggu);
                 updatedCount++;
             }
             alert(`Berhasil mengimpor ${updatedCount} siswa.`);
-            // Refresh tampilan
             renderTable();
             csvImportFile.value = "";
         } catch (err) {
@@ -741,11 +730,12 @@
     }
 
     // ==================== AUTH ====================
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
             authStatus.style.display = 'none';
             mainContent.style.display = 'block';
-            populateKelasSelect().catch(console.error);
+            await loadKodeMapelProduktifTOI();
+            await populateKelasSelect();
         } else {
             authStatus.innerHTML = '🔄 Melakukan login anonim...';
             signInAnonymously(auth).catch((error) => {
