@@ -264,7 +264,7 @@
             <i class="fas fa-clipboard-list"></i>
             Absensi Teaching Factory
         </h1>
-        <div><i class="fas fa-chalkboard-user"></i> Sistem Absensi Per Guru</div>
+        <div><i class="fas fa-chalkboard-user"></i> Sistem Absensi Per Guru (Berdasarkan Kode Mapel)</div>
     </div>
 
     <div id="loadingState" class="loading">
@@ -321,12 +321,13 @@
 
             <div id="warningMessage" class="warning-state" style="display: none;"></div>
 
-            <!-- Tabs untuk mapel -->
+            <!-- Tabs untuk mapel (hanya menampilkan kode mapel) -->
             <div id="mapelTabs" class="mapel-tabs" style="display: none;"></div>
 
             <!-- Header mapel aktif -->
             <div id="mapelHeaderInfo" class="mapel-header-info" style="display: none;">
-                <span><i class="fas fa-book-open"></i> <strong id="activeMapelName">-</strong></span>
+                <span><i class="fas fa-code"></i> <strong id="activeMapelKode">-</strong></span>
+                <span><i class="fas fa-book-open"></i> <strong id="activeMapelNama">-</strong></span>
                 <span><i class="fas fa-school"></i> Kelas: <strong id="activeKelasName">-</strong></span>
                 <span><i class="fas fa-users"></i> Siswa: <strong id="activeSiswaCount">0</strong></span>
             </div>
@@ -361,7 +362,7 @@
     </div>
 
     <div class="footer-note">
-        <i class="fas fa-clock"></i> Absensi berdasarkan jadwal mingguan. Klik tab mapel untuk berpindah antar mata pelajaran yang diajar.
+        <i class="fas fa-clock"></i> Absensi berdasarkan kode mapel yang terdaftar di sistem. Setiap mapel memiliki kode unik yang digunakan untuk mencocokkan jadwal.
     </div>
 </div>
 
@@ -395,7 +396,8 @@
     const totalMapelInfo = document.getElementById('totalMapelInfo');
     const mapelTabs = document.getElementById('mapelTabs');
     const mapelHeaderInfo = document.getElementById('mapelHeaderInfo');
-    const activeMapelName = document.getElementById('activeMapelName');
+    const activeMapelKode = document.getElementById('activeMapelKode');
+    const activeMapelNama = document.getElementById('activeMapelNama');
     const activeKelasName = document.getElementById('activeKelasName');
     const activeSiswaCount = document.getElementById('activeSiswaCount');
     const absensiTbody = document.getElementById('absensiTbody');
@@ -408,7 +410,7 @@
     let daftarMinggu = [];
     let currentGuru = null;
     let currentMinggu = null;
-    let allTeachingResults = []; // [{ kelas, mapel, siswa }]
+    let allTeachingResults = []; // [{ kelas, mapel: {kode, nama}, siswa }]
     let activeTabIndex = 0;
     let absensiData = new Map(); // key: siswaId, value: status
 
@@ -421,7 +423,7 @@
         '': { label: '', class: '', full: '' }
     };
 
-    // ==================== LOAD GURU ====================
+    // ==================== LOAD GURU (dengan kode mapel) ====================
     async function loadGuruList() {
         try {
             const guruSnapshot = await getDocs(collection(db, "guru"));
@@ -430,7 +432,7 @@
                 const data = docSnap.data();
                 if (data.mapel && data.mapel.length > 0) {
                     const mapelList = data.mapel.map(m => ({
-                        kode: m.kode || m.mapel.substring(0,3).toUpperCase(),
+                        kode: m.kode || generateKodeFromMapel(m.mapel),
                         nama: m.mapel,
                         kelompok: m.kelompok || '-'
                     }));
@@ -455,6 +457,18 @@
             console.error("Error loading guru:", error);
             return false;
         }
+    }
+
+    // Helper: generate kode dari nama mapel (untuk fallback)
+    function generateKodeFromMapel(mapel) {
+        if (!mapel) return '';
+        const words = mapel.trim().split(/\s+/);
+        let initials = words.map(word => {
+            const firstChar = word.charAt(0);
+            return firstChar.toUpperCase();
+        }).join('');
+        if (initials.length > 5) initials = initials.substring(0, 5);
+        return initials;
     }
 
     // ==================== LOAD MINGGU ====================
@@ -493,8 +507,8 @@
         return kelasList;
     }
 
-    // ==================== AMBIL SISWA DENGAN MAPEL TERTENTU ====================
-    async function getSiswaByMapel(kelasId, mingguKe, mapelNama) {
+    // ==================== AMBIL SISWA DENGAN MAPEL TERTENTU (berdasarkan kode mapel) ====================
+    async function getSiswaByMapel(kelasId, mingguKe, mapelKode) {
         const siswaRef = collection(db, "kelas", kelasId, "siswa");
         const siswaSnapshot = await getDocs(siswaRef);
         const semuaSiswa = [];
@@ -514,7 +528,8 @@
             if (jadwalSnap.exists()) {
                 const mingguData = jadwalSnap.data().minggu || {};
                 const mapelSiswa = mingguData[mingguKe];
-                if (mapelSiswa && mapelSiswa.includes(mapelNama)) {
+                // Mencocokkan berdasarkan KODE MAPEL (bukan nama lengkap)
+                if (mapelSiswa && mapelSiswa === mapelKode) {
                     result.push(siswa);
                 }
             }
@@ -522,14 +537,14 @@
         return result;
     }
 
-    // ==================== CARI SEMUA JADWAL MENGAJAR GURU ====================
+    // ==================== CARI SEMUA JADWAL MENGAJAR GURU (berdasarkan kode mapel) ====================
     async function findAllTeacherSchedules(guru, mingguKe) {
         const kelasList = await getAllClasses();
         const results = [];
 
         for (const guruMapel of guru.mapelList) {
-            const mapelNama = guruMapel.nama;
             const mapelKode = guruMapel.kode;
+            const mapelNama = guruMapel.nama;
             const mapelKelompok = guruMapel.kelompok;
 
             for (const kelas of kelasList) {
@@ -540,11 +555,15 @@
                 const schedule = jadwalSnap.data().schedule || {};
                 let hasMapel = false;
 
+                // Cek apakah di jadwal kelas terdapat kelompok "Produktif TOI"
+                // (karena di jadwal kelas disimpan dalam bentuk kelompok mapel)
                 for (const hari of ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"]) {
                     const daySchedule = schedule[hari];
                     if (daySchedule) {
                         for (let jp = 1; jp <= 10; jp++) {
-                            if (daySchedule[jp] === mapelNama) {
+                            // Di jadwal kelas, yang tersimpan adalah NAMA KELOMPOK (misal: "Produktif TOI")
+                            const kelompokValue = daySchedule[jp];
+                            if (kelompokValue && kelompokValue === "Produktif TOI") {
                                 hasMapel = true;
                                 break;
                             }
@@ -554,7 +573,8 @@
                 }
 
                 if (hasMapel) {
-                    const siswaTerdaftar = await getSiswaByMapel(kelas.id, mingguKe, mapelNama);
+                    // Ambil siswa yang memiliki jadwal dengan kode mapel ini
+                    const siswaTerdaftar = await getSiswaByMapel(kelas.id, mingguKe, mapelKode);
                     if (siswaTerdaftar.length > 0) {
                         results.push({
                             kelas: kelas,
@@ -590,7 +610,7 @@
         const siswaList = mapelItem.siswa;
         
         if (siswaList.length === 0) {
-            absensiTbody.innerHTML = '的人<td colspan="4" class="empty-state">Tidak ada siswa yang mengikuti mapel ini pada minggu ini</td>';
+            absensiTbody.innerHTML = '<tr><td colspan="4" class="empty-state">Tidak ada siswa yang mengikuti mapel ini pada minggu ini</td></tr>';
             activeSiswaCount.textContent = '0';
             return;
         }
@@ -619,7 +639,8 @@
         });
         absensiTbody.innerHTML = html;
         activeSiswaCount.textContent = siswaList.length;
-        activeMapelName.textContent = `${mapelItem.mapel.kode} - ${mapelItem.mapel.nama}`;
+        activeMapelKode.textContent = mapelItem.mapel.kode;
+        activeMapelNama.textContent = mapelItem.mapel.nama;
         activeKelasName.textContent = mapelItem.kelas.nama;
 
         // Event listeners
@@ -712,12 +733,12 @@
         }, 3000);
     }
 
-    // ==================== RENDER MAPEL TABS ====================
+    // ==================== RENDER MAPEL TABS (menampilkan kode mapel) ====================
     function renderMapelTabs() {
         if (allTeachingResults.length === 0) {
             mapelTabs.style.display = 'none';
             mapelHeaderInfo.style.display = 'none';
-            absensiTbody.innerHTML = '的人<td colspan="4" class="empty-state">Tidak ada mapel yang diajar pada minggu ini</td>';
+            absensiTbody.innerHTML = '<tr><td colspan="4" class="empty-state">Tidak ada mapel yang diajar pada minggu ini</td></tr>';
             return;
         }
 
@@ -729,7 +750,7 @@
             const isActive = idx === activeTabIndex;
             tabsHtml += `
                 <div class="mapel-tab ${isActive ? 'active' : ''}" data-tab-index="${idx}">
-                    ${item.mapel.kode} - ${item.mapel.nama}
+                    ${item.mapel.kode}
                     <span class="badge-count">${item.siswa.length}</span>
                 </div>
             `;
@@ -766,7 +787,7 @@
         
         if (!currentGuru || !currentMinggu) return;
 
-        absensiTbody.innerHTML = '的人<td colspan="4" class="loading"><i class="fas fa-spinner fa-spin"></i> Memuat data...</td>';
+        absensiTbody.innerHTML = '<tr><td colspan="4" class="loading"><i class="fas fa-spinner fa-spin"></i> Memuat data...</td></tr>';
         absensiPanel.style.display = 'block';
         warningMessage.style.display = 'none';
         mapelTabs.style.display = 'none';
@@ -786,13 +807,14 @@
                 Namun tidak ada jadwal yang cocok pada minggu ${mingguKe}.
                 <br><br>Pastikan:
                 <ul style="margin-top: 8px; text-align: left; display: inline-block;">
-                    <li>Mapel sudah ditambahkan ke jadwal kelas di halaman Jadwal</li>
-                    <li>Siswa sudah memiliki jadwal mapel ini di halaman Jadwal Siswa (format: kode - nama)</li>
+                    <li>Mapel sudah ditambahkan ke jadwal kelas di halaman Jadwal (kelompok "Produktif TOI")</li>
+                    <li>Siswa sudah memiliki jadwal dengan KODE MAPEL yang sesuai di halaman Jadwal Siswa</li>
+                    <li>Kode mapel di jadwal siswa harus sama persis dengan kode mapel guru</li>
                 </ul>
             `;
             warningMessage.style.display = 'block';
             totalMapelInfo.textContent = '0';
-            absensiTbody.innerHTML = '的人<td colspan="4" class="empty-state">Pilih kombinasi lain atau atur jadwal terlebih dahulu</td>';
+            absensiTbody.innerHTML = '<tr><td colspan="4" class="empty-state">Pilih kombinasi lain atau atur jadwal terlebih dahulu</td></tr>';
             return;
         }
 
@@ -821,6 +843,15 @@
         
         loadingState.style.display = 'none';
         mainContent.style.display = 'block';
+        
+        if (!hasGuru) {
+            warningMessage.innerHTML = '⚠️ Belum ada data guru. Silakan tambahkan guru dan mapel di halaman Manajemen Guru terlebih dahulu.';
+            warningMessage.style.display = 'block';
+        }
+        if (!hasMinggu) {
+            warningMessage.innerHTML = '⚠️ Belum ada pengaturan minggu. Silakan atur minggu di halaman Pengaturan Minggu terlebih dahulu.';
+            warningMessage.style.display = 'block';
+        }
     }
 
     loadBtn.addEventListener('click', loadAbsensi);
