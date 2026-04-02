@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absensi Guru - Teknik Otomasi Industri</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #eef2f8;
+            padding: 30px 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a4a6f, #2c7a4d);
+            color: white;
+            padding: 24px 32px;
+            border-radius: 28px;
+            margin-bottom: 24px;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header h1 i {
+            font-size: 2rem;
+        }
+        .card {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #e2edf2;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #2c6b4f;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+        select, button {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 28px;
+            border: 1px solid #cfdfea;
+            background: white;
+            font-size: 0.9rem;
+        }
+        button {
+            background: #2c7a4d;
+            color: white;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: #1e5e3a;
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #2c7a4d;
+            color: #2c7a4d;
+        }
+        .btn-outline:hover {
+            background: #eef5ea;
+            transform: none;
+        }
+        .info-bar {
+            background: #f0f7ff;
+            border-left: 4px solid #2c7a4d;
+            padding: 16px 20px;
+            border-radius: 20px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+        .info-bar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .info-bar-item i {
+            font-size: 1.4rem;
+            color: #2c7a4d;
+        }
+        .mapel-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #e2edf2;
+            padding-bottom: 12px;
+        }
+        .mapel-tab {
+            background: #f0f4f9;
+            padding: 10px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 500;
+            font-size: 0.85rem;
+            border: 1px solid transparent;
+        }
+        .mapel-tab:hover {
+            background: #e2e9f0;
+        }
+        .mapel-tab.active {
+            background: #2c7a4d;
+            color: white;
+            border-color: #2c7a4d;
+        }
+        .mapel-tab .badge-count {
+            background: rgba(0,0,0,0.2);
+            border-radius: 20px;
+            padding: 2px 8px;
+            margin-left: 8px;
+            font-size: 0.7rem;
+        }
+        .mapel-tab.active .badge-count {
+            background: rgba(255,255,255,0.3);
+        }
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th {
+            background: #eef4fa;
+            padding: 14px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #1e4a6e;
+            border-bottom: 2px solid #d4e2ef;
+        }
+        td {
+            padding: 12px 12px;
+            border-bottom: 1px solid #ecf3f8;
+            vertical-align: middle;
+        }
+        .status-input {
+            width: 80px;
+            padding: 8px 10px;
+            border-radius: 24px;
+            border: 1px solid #cbdde6;
+            background: white;
+            font-size: 0.9rem;
+            text-align: center;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-hadir { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .status-sakit { background: #fff3cd; color: #856404; border-color: #ffeeba; }
+        .status-izin { background: #cce5ff; color: #004085; border-color: #b8daff; }
+        .status-alpha { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .status-terlambat { background: #e2d5f1; color: #5e2a84; border-color: #d1c4e9; }
+        .btn-save {
+            background: #2c7a4d;
+            padding: 8px 24px;
+            font-size: 0.85rem;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c86a0;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #8aa0b0;
+        }
+        .warning-state {
+            text-align: center;
+            padding: 30px;
+            background: #fff3cd;
+            border-radius: 20px;
+            color: #856404;
+            margin: 20px 0;
+        }
+        .footer-note {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #6c86a0;
+            margin-top: 24px;
+            padding: 16px;
+            background: #f6fafd;
+            border-radius: 24px;
+        }
+        .success-msg {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .keterangan-info {
+            font-size: 0.7rem;
+            color: #6c86a0;
+            margin-top: 8px;
+            text-align: center;
+        }
+        .mapel-header-info {
+            background: #e9f0f5;
+            padding: 12px 16px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        @media (max-width: 700px) {
+            body { padding: 15px; }
+            .header { padding: 18px; }
+            .form-row { flex-direction: column; }
+            th, td { padding: 8px 6px; }
+            .status-input { width: 60px; padding: 6px; font-size: 0.8rem; }
+            .mapel-tab { padding: 6px 12px; font-size: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>
+            <i class="fas fa-clipboard-list"></i>
+            Absensi Teaching Factory
+        </h1>
+        <div><i class="fas fa-chalkboard-user"></i> Sistem Absensi Per Guru</div>
+    </div>
+
+    <div id="loadingState" class="loading">
+        <i class="fas fa-spinner fa-spin"></i> Menghubungkan ke Firebase...
+    </div>
+
+    <div id="mainContent" style="display: none;">
+        <!-- Pilih Guru & Minggu -->
+        <div class="card">
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="fas fa-user-tie"></i> Pilih Guru</label>
+                    <select id="guruSelect">
+                        <option value="">-- Pilih Guru --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-calendar-week"></i> Pilih Minggu</label>
+                    <select id="mingguSelect">
+                        <option value="">-- Pilih Minggu --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button id="loadBtn"><i class="fas fa-search"></i> Tampilkan Absensi</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info & Tabel Absensi -->
+        <div id="absensiPanel" style="display: none;">
+            <div class="info-bar">
+                <div class="info-bar-item">
+                    <i class="fas fa-user"></i>
+                    <div>
+                        <div style="font-size: 0.7rem; color: #6c86a0;">Guru</div>
+                        <div><strong id="guruNamaInfo">-</strong></div>
+                    </div>
+                </div>
+                <div class="info-bar-item">
+                    <i class="fas fa-calendar-week"></i>
+                    <div>
+                        <div style="font-size: 0.7rem; color: #6c86a0;">Minggu</div>
+                        <div><strong id="mingguInfo">-</strong></div>
+                    </div>
+                </div>
+                <div class="info-bar-item">
+                    <i class="fas fa-chalkboard"></i>
+                    <div>
+                        <div style="font-size: 0.7rem; color: #6c86a0;">Total Mapel Diajar</div>
+                        <div><strong id="totalMapelInfo">0</strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="warningMessage" class="warning-state" style="display: none;"></div>
+
+            <!-- Tabs untuk mapel -->
+            <div id="mapelTabs" class="mapel-tabs" style="display: none;"></div>
+
+            <!-- Header mapel aktif -->
+            <div id="mapelHeaderInfo" class="mapel-header-info" style="display: none;">
+                <span><i class="fas fa-book-open"></i> <strong id="activeMapelName">-</strong></span>
+                <span><i class="fas fa-school"></i> Kelas: <strong id="activeKelasName">-</strong></span>
+                <span><i class="fas fa-users"></i> Siswa: <strong id="activeSiswaCount">0</strong></span>
+            </div>
+
+            <div id="successMsg" class="success-msg">
+                <i class="fas fa-check-circle"></i> Absensi berhasil disimpan!
+            </div>
+
+            <div class="card">
+                <div class="table-wrapper">
+                    <table id="absensiTable">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Siswa</th>
+                                <th>Status (H/I/S/A/T)</th>
+                                <th>Aksi</th>
+                            </thead>
+                        <tbody id="absensiTbody">
+                            的人<td colspan="4" class="empty-state">Pilih guru dan minggu untuk menampilkan absensi</td>
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 12px;">
+                    <button id="saveAllBtn" class="btn-save"><i class="fas fa-save"></i> Simpan Semua</button>
+                </div>
+                <div class="keterangan-info">
+                    <i class="fas fa-info-circle"></i> Kode Status: <strong>H</strong> = Hadir, <strong>I</strong> = Izin, <strong>S</strong> = Sakit, <strong>A</strong> = Alpha, <strong>T</strong> = Terlambat
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-note">
+        <i class="fas fa-clock"></i> Absensi berdasarkan jadwal mingguan. Klik tab mapel untuk berpindah antar mata pelajaran yang diajar.
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, doc, getDocs, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDKR4e_9uHBhBqQEdxR7s2R807fawb7J8Y",
+        authDomain: "absensi-toi.firebaseapp.com",
+        projectId: "absensi-toi",
+        storageBucket: "absensi-toi.firebasestorage.app",
+        messagingSenderId: "1069310497322",
+        appId: "1:1069310497322:web:2705d66e041c41a1626953"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // DOM Elements
+    const loadingState = document.getElementById('loadingState');
+    const mainContent = document.getElementById('mainContent');
+    const guruSelect = document.getElementById('guruSelect');
+    const mingguSelect = document.getElementById('mingguSelect');
+    const loadBtn = document.getElementById('loadBtn');
+    const absensiPanel = document.getElementById('absensiPanel');
+    const guruNamaInfo = document.getElementById('guruNamaInfo');
+    const mingguInfo = document.getElementById('mingguInfo');
+    const totalMapelInfo = document.getElementById('totalMapelInfo');
+    const mapelTabs = document.getElementById('mapelTabs');
+    const mapelHeaderInfo = document.getElementById('mapelHeaderInfo');
+    const activeMapelName = document.getElementById('activeMapelName');
+    const activeKelasName = document.getElementById('activeKelasName');
+    const activeSiswaCount = document.getElementById('activeSiswaCount');
+    const absensiTbody = document.getElementById('absensiTbody');
+    const saveAllBtn = document.getElementById('saveAllBtn');
+    const successMsg = document.getElementById('successMsg');
+    const warningMessage = document.getElementById('warningMessage');
+
+    // Data global
+    let daftarGuru = [];
+    let daftarMinggu = [];
+    let currentGuru = null;
+    let currentMinggu = null;
+    let allTeachingResults = []; // [{ kelas, mapel, siswa }]
+    let activeTabIndex = 0;
+    let absensiData = new Map(); // key: siswaId, value: status
+
+    const statusConfig = {
+        'H': { label: 'Hadir', class: 'status-hadir', full: 'Hadir' },
+        'I': { label: 'Izin', class: 'status-izin', full: 'Izin' },
+        'S': { label: 'Sakit', class: 'status-sakit', full: 'Sakit' },
+        'A': { label: 'Alpha', class: 'status-alpha', full: 'Alpha' },
+        'T': { label: 'Terlambat', class: 'status-terlambat', full: 'Terlambat' },
+        '': { label: '', class: '', full: '' }
+    };
+
+    // ==================== LOAD GURU ====================
+    async function loadGuruList() {
+        try {
+            const guruSnapshot = await getDocs(collection(db, "guru"));
+            daftarGuru = [];
+            guruSnapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                if (data.mapel && data.mapel.length > 0) {
+                    const mapelList = data.mapel.map(m => ({
+                        kode: m.kode || m.mapel.substring(0,3).toUpperCase(),
+                        nama: m.mapel,
+                        kelompok: m.kelompok || '-'
+                    }));
+                    daftarGuru.push({
+                        id: docSnap.id,
+                        nama: data.nama,
+                        mapelList: mapelList
+                    });
+                }
+            });
+            daftarGuru.sort((a, b) => a.nama.localeCompare(b.nama, 'id'));
+
+            guruSelect.innerHTML = '<option value="">-- Pilih Guru --</option>';
+            daftarGuru.forEach(guru => {
+                const option = document.createElement('option');
+                option.value = guru.id;
+                option.textContent = guru.nama;
+                guruSelect.appendChild(option);
+            });
+            return daftarGuru.length > 0;
+        } catch (error) {
+            console.error("Error loading guru:", error);
+            return false;
+        }
+    }
+
+    // ==================== LOAD MINGGU ====================
+    async function loadMingguList() {
+        try {
+            const mingguRef = doc(db, "pengaturanMinggu", "current");
+            const mingguSnap = await getDoc(mingguRef);
+            if (mingguSnap.exists()) {
+                daftarMinggu = mingguSnap.data().mingguList || [];
+                daftarMinggu.sort((a, b) => a.mingguKe - b.mingguKe);
+            } else {
+                daftarMinggu = [];
+            }
+
+            mingguSelect.innerHTML = '<option value="">-- Pilih Minggu --</option>';
+            daftarMinggu.forEach(m => {
+                const option = document.createElement('option');
+                option.value = m.mingguKe;
+                option.textContent = `Minggu ${m.mingguKe} (${m.tanggalMulai} - ${m.tanggalAkhir})`;
+                mingguSelect.appendChild(option);
+            });
+            return daftarMinggu.length > 0;
+        } catch (error) {
+            console.error("Error loading minggu:", error);
+            return false;
+        }
+    }
+
+    // ==================== AMBIL SEMUA KELAS ====================
+    async function getAllClasses() {
+        const kelasSnapshot = await getDocs(collection(db, "kelas"));
+        let kelasList = [];
+        kelasSnapshot.forEach(docSnap => {
+            kelasList.push({ id: docSnap.id, nama: docSnap.data().nama });
+        });
+        return kelasList;
+    }
+
+    // ==================== AMBIL SISWA DENGAN MAPEL TERTENTU ====================
+    async function getSiswaByMapel(kelasId, mingguKe, mapelNama) {
+        const siswaRef = collection(db, "kelas", kelasId, "siswa");
+        const siswaSnapshot = await getDocs(siswaRef);
+        const semuaSiswa = [];
+        siswaSnapshot.forEach(docSnap => {
+            semuaSiswa.push({
+                id: docSnap.id,
+                no: docSnap.data().no,
+                nama: docSnap.data().nama
+            });
+        });
+        semuaSiswa.sort((a, b) => a.no - b.no);
+
+        const result = [];
+        for (const siswa of semuaSiswa) {
+            const jadwalSiswaRef = doc(db, "jadwalSiswa", siswa.id);
+            const jadwalSnap = await getDoc(jadwalSiswaRef);
+            if (jadwalSnap.exists()) {
+                const mingguData = jadwalSnap.data().minggu || {};
+                const mapelSiswa = mingguData[mingguKe];
+                if (mapelSiswa && mapelSiswa.includes(mapelNama)) {
+                    result.push(siswa);
+                }
+            }
+        }
+        return result;
+    }
+
+    // ==================== CARI SEMUA JADWAL MENGAJAR GURU ====================
+    async function findAllTeacherSchedules(guru, mingguKe) {
+        const kelasList = await getAllClasses();
+        const results = [];
+
+        for (const guruMapel of guru.mapelList) {
+            const mapelNama = guruMapel.nama;
+            const mapelKode = guruMapel.kode;
+            const mapelKelompok = guruMapel.kelompok;
+
+            for (const kelas of kelasList) {
+                const jadwalRef = doc(db, "jadwal", kelas.id);
+                const jadwalSnap = await getDoc(jadwalRef);
+                if (!jadwalSnap.exists()) continue;
+
+                const schedule = jadwalSnap.data().schedule || {};
+                let hasMapel = false;
+
+                for (const hari of ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"]) {
+                    const daySchedule = schedule[hari];
+                    if (daySchedule) {
+                        for (let jp = 1; jp <= 10; jp++) {
+                            if (daySchedule[jp] === mapelNama) {
+                                hasMapel = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (hasMapel) break;
+                }
+
+                if (hasMapel) {
+                    const siswaTerdaftar = await getSiswaByMapel(kelas.id, mingguKe, mapelNama);
+                    if (siswaTerdaftar.length > 0) {
+                        results.push({
+                            kelas: kelas,
+                            mapel: { kode: mapelKode, nama: mapelNama, kelompok: mapelKelompok },
+                            siswa: siswaTerdaftar
+                        });
+                    }
+                }
+            }
+        }
+        return results;
+    }
+
+    // ==================== LOAD ABSENSI YANG SUDAH TERSIMPAN ====================
+    async function loadExistingAbsensiForMapel(mapel, siswaList) {
+        if (!currentMinggu) return;
+        absensiData.clear();
+        
+        for (const siswa of siswaList) {
+            const docId = `${siswa.id}_${currentMinggu.mingguKe}_${mapel.kode}`;
+            const absensiRef = doc(db, "absensi", docId);
+            const absensiSnap = await getDoc(absensiRef);
+            if (absensiSnap.exists()) {
+                absensiData.set(siswa.id, absensiSnap.data().status || '');
+            } else {
+                absensiData.set(siswa.id, '');
+            }
+        }
+    }
+
+    // ==================== RENDER TABEL UNTUK MAPEL TERTENTU ====================
+    function renderTableForMapel(mapelItem) {
+        const siswaList = mapelItem.siswa;
+        
+        if (siswaList.length === 0) {
+            absensiTbody.innerHTML = '的人<td colspan="4" class="empty-state">Tidak ada siswa yang mengikuti mapel ini pada minggu ini</td>';
+            activeSiswaCount.textContent = '0';
+            return;
+        }
+
+        let html = '';
+        siswaList.forEach((siswa, idx) => {
+            const status = absensiData.get(siswa.id) || '';
+            const statusClass = statusConfig[status]?.class || '';
+            html += `
+                <tr data-siswa-id="${siswa.id}">
+                    <td>${idx + 1}</td>
+                    <td><strong>${escapeHtml(siswa.nama)}</strong></td>
+                    <td>
+                        <input type="text" class="status-input ${statusClass}" 
+                               data-siswa-id="${siswa.id}" 
+                               value="${status}"
+                               maxlength="1"
+                               placeholder="H/I/S/A/T"
+                               style="text-transform:uppercase;">
+                    </td>
+                    <td>
+                        <button class="save-single-btn" data-siswa-id="${siswa.id}" style="background:#5bc0de; padding:6px 16px; border-radius:24px; border:none; cursor:pointer;">💾 Simpan</button>
+                    </td>
+                </tr>
+            `;
+        });
+        absensiTbody.innerHTML = html;
+        activeSiswaCount.textContent = siswaList.length;
+        activeMapelName.textContent = `${mapelItem.mapel.kode} - ${mapelItem.mapel.nama}`;
+        activeKelasName.textContent = mapelItem.kelas.nama;
+
+        // Event listeners
+        document.querySelectorAll('.status-input').forEach(input => {
+            input.addEventListener('input', (e) => {
+                let val = input.value.trim().toUpperCase();
+                if (val && !['H', 'I', 'S', 'A', 'T'].includes(val)) {
+                    input.value = '';
+                    return;
+                }
+                if (val) {
+                    const statusClass = statusConfig[val]?.class || '';
+                    input.className = `status-input ${statusClass}`;
+                } else {
+                    input.className = 'status-input';
+                }
+                const siswaId = input.getAttribute('data-siswa-id');
+                absensiData.set(siswaId, val);
+            });
+        });
+
+        document.querySelectorAll('.save-single-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const siswaId = btn.getAttribute('data-siswa-id');
+                await saveAbsensiSiswa(siswaId, mapelItem);
+                showSuccessMessage();
+            });
+        });
+    }
+
+    // ==================== SIMPAN ABSENSI ====================
+    async function saveAbsensiSiswa(siswaId, mapelItem) {
+        const status = absensiData.get(siswaId) || '';
+        if (!status) {
+            alert("Isi status terlebih dahulu (H/I/S/A/T)");
+            return false;
+        }
+        
+        const docId = `${siswaId}_${currentMinggu.mingguKe}_${mapelItem.mapel.kode}`;
+        const absensiRef = doc(db, "absensi", docId);
+        
+        try {
+            await setDoc(absensiRef, {
+                siswaId: siswaId,
+                mingguKe: currentMinggu.mingguKe,
+                kodeMapel: mapelItem.mapel.kode,
+                namaMapel: mapelItem.mapel.nama,
+                kelompokMapel: mapelItem.mapel.kelompok,
+                kelasId: mapelItem.kelas.id,
+                namaKelas: mapelItem.kelas.nama,
+                status: status,
+                statusFull: statusConfig[status]?.full || status,
+                tanggalAbsen: new Date().toISOString(),
+                guruId: currentGuru.id,
+                guruNama: currentGuru.nama
+            }, { merge: true });
+            return true;
+        } catch (error) {
+            console.error("Error saving absensi:", error);
+            alert("Gagal menyimpan absensi: " + error.message);
+            return false;
+        }
+    }
+
+    async function saveAllAbsensi() {
+        const activeItem = allTeachingResults[activeTabIndex];
+        if (!activeItem || activeItem.siswa.length === 0) {
+            alert("Tidak ada data siswa untuk disimpan.");
+            return;
+        }
+        
+        let successCount = 0;
+        for (const siswa of activeItem.siswa) {
+            const saved = await saveAbsensiSiswa(siswa.id, activeItem);
+            if (saved) successCount++;
+        }
+        
+        if (successCount > 0) {
+            showSuccessMessage();
+            alert(`Berhasil menyimpan ${successCount} dari ${activeItem.siswa.length} absensi.`);
+        } else {
+            alert("Gagal menyimpan absensi.");
+        }
+    }
+
+    function showSuccessMessage() {
+        successMsg.style.display = 'block';
+        setTimeout(() => {
+            successMsg.style.display = 'none';
+        }, 3000);
+    }
+
+    // ==================== RENDER MAPEL TABS ====================
+    function renderMapelTabs() {
+        if (allTeachingResults.length === 0) {
+            mapelTabs.style.display = 'none';
+            mapelHeaderInfo.style.display = 'none';
+            absensiTbody.innerHTML = '的人<td colspan="4" class="empty-state">Tidak ada mapel yang diajar pada minggu ini</td>';
+            return;
+        }
+
+        mapelTabs.style.display = 'flex';
+        mapelHeaderInfo.style.display = 'flex';
+        
+        let tabsHtml = '';
+        allTeachingResults.forEach((item, idx) => {
+            const isActive = idx === activeTabIndex;
+            tabsHtml += `
+                <div class="mapel-tab ${isActive ? 'active' : ''}" data-tab-index="${idx}">
+                    ${item.mapel.kode} - ${item.mapel.nama}
+                    <span class="badge-count">${item.siswa.length}</span>
+                </div>
+            `;
+        });
+        mapelTabs.innerHTML = tabsHtml;
+
+        // Event listeners untuk tabs
+        document.querySelectorAll('.mapel-tab').forEach(tab => {
+            tab.addEventListener('click', async (e) => {
+                const idx = parseInt(tab.getAttribute('data-tab-index'));
+                if (!isNaN(idx) && idx !== activeTabIndex) {
+                    activeTabIndex = idx;
+                    const selectedItem = allTeachingResults[activeTabIndex];
+                    await loadExistingAbsensiForMapel(selectedItem.mapel, selectedItem.siswa);
+                    renderTableForMapel(selectedItem);
+                    renderMapelTabs(); // re-render untuk update active class
+                }
+            });
+        });
+    }
+
+    // ==================== LOAD DATA UTAMA ====================
+    async function loadAbsensi() {
+        const guruId = guruSelect.value;
+        const mingguKe = parseInt(mingguSelect.value);
+        
+        if (!guruId || !mingguKe) {
+            alert("Pilih guru dan minggu terlebih dahulu!");
+            return;
+        }
+
+        currentGuru = daftarGuru.find(g => g.id === guruId);
+        currentMinggu = daftarMinggu.find(m => m.mingguKe === mingguKe);
+        
+        if (!currentGuru || !currentMinggu) return;
+
+        absensiTbody.innerHTML = '的人<td colspan="4" class="loading"><i class="fas fa-spinner fa-spin"></i> Memuat data...</td>';
+        absensiPanel.style.display = 'block';
+        warningMessage.style.display = 'none';
+        mapelTabs.style.display = 'none';
+        mapelHeaderInfo.style.display = 'none';
+
+        guruNamaInfo.textContent = currentGuru.nama;
+        mingguInfo.textContent = `Minggu ${currentMinggu.mingguKe} (${currentMinggu.tanggalMulai} - ${currentMinggu.tanggalAkhir})`;
+
+        allTeachingResults = await findAllTeacherSchedules(currentGuru, mingguKe);
+        
+        if (allTeachingResults.length === 0) {
+            const guruMapelList = currentGuru.mapelList.map(m => `${m.kode} - ${m.nama}`).join(', ');
+            warningMessage.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i> 
+                <strong>Guru tidak mengajar pada minggu ini</strong><br><br>
+                Guru ini memiliki mapel: <strong>${guruMapelList}</strong><br>
+                Namun tidak ada jadwal yang cocok pada minggu ${mingguKe}.
+                <br><br>Pastikan:
+                <ul style="margin-top: 8px; text-align: left; display: inline-block;">
+                    <li>Mapel sudah ditambahkan ke jadwal kelas di halaman Jadwal</li>
+                    <li>Siswa sudah memiliki jadwal mapel ini di halaman Jadwal Siswa (format: kode - nama)</li>
+                </ul>
+            `;
+            warningMessage.style.display = 'block';
+            totalMapelInfo.textContent = '0';
+            absensiTbody.innerHTML = '的人<td colspan="4" class="empty-state">Pilih kombinasi lain atau atur jadwal terlebih dahulu</td>';
+            return;
+        }
+
+        totalMapelInfo.textContent = allTeachingResults.length;
+        activeTabIndex = 0;
+        const firstItem = allTeachingResults[0];
+        await loadExistingAbsensiForMapel(firstItem.mapel, firstItem.siswa);
+        renderTableForMapel(firstItem);
+        renderMapelTabs();
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // ==================== INIT ====================
+    async function init() {
+        const hasGuru = await loadGuruList();
+        const hasMinggu = await loadMingguList();
+        
+        loadingState.style.display = 'none';
+        mainContent.style.display = 'block';
+    }
+
+    loadBtn.addEventListener('click', loadAbsensi);
+    saveAllBtn.addEventListener('click', saveAllAbsensi);
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            init();
+        } else {
+            loadingState.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Melakukan login anonim...';
+            signInAnonymously(auth).catch((error) => {
+                console.error("Gagal login anonim:", error);
+                loadingState.innerHTML = '❌ Gagal terhubung ke Firebase. Pastikan autentikasi anonim diaktifkan.';
+                loadingState.style.color = 'red';
+            });
+        }
+    });
+</script>
+</body>
+</html>
