@@ -239,9 +239,7 @@
     </h1>
     <div class="sub">➕ Kelola data guru & mata pelajaran (setiap mapel memiliki kelompok & kode singkat)</div>
 
-    <div id="authStatus" class="loading">⏳ Menghubungkan ke Firebase...</div>
-
-    <div id="mainContent" style="display: none;">
+    <div id="mainContent">
         <!-- Form Tambah Guru -->
         <div class="card">
             <div class="form-row">
@@ -279,17 +277,10 @@
             <div class="table-wrapper">
                 <table id="guruTable">
                     <thead>
-                        <tr>
-                            <th>No</th>
-                            <th>Nama Guru</th>
-                            <th>Kelompok Mapel</th>
-                            <th>Nama Mapel</th>
-                            <th>Kode Mapel</th>
-                            <th>Aksi</th>
-                        </tr>
+                        <tr><th>No</th><th>Nama Guru</th><th>Kelompok Mapel</th><th>Nama Mapel</th><th>Kode Mapel</th><th>Aksi</th></tr>
                     </thead>
                     <tbody id="guruTbody">
-                        <tr><td colspan="6">Memuat data guru...</td></tr>
+                        <tr><td colspan="6" class="loading">Memuat data guru...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -298,10 +289,9 @@
 
     <div class="footer-note">
         💡 <strong>Petunjuk:</strong><br>
-        • Tambah guru: isi nama, lalu gunakan tombol "Edit Mapel" untuk menambahkan kelompok, nama mapel, dan kode mapel (opsional).<br>
-        • Impor CSV: gunakan template dengan kolom <code>nama,kelompok,mapel,kode</code>. Baris dapat diulang untuk satu guru dengan mapel berbeda. Data akan digabung otomatis.<br>
-        • Kode mapel akan ditampilkan di kolom terpisah untuk memudahkan pemilihan di halaman jadwal.<br>
-        • Data otomatis diurutkan berdasarkan nama guru (A-Z) dan diberi nomor urut.
+        • Tambah guru: isi nama, lalu gunakan tombol "Edit Mapel" untuk menambahkan kelompok, nama mapel, dan kode mapel.<br>
+        • Impor CSV: gunakan template dengan kolom <code>nama,kelompok,mapel,kode</code>.<br>
+        • Data otomatis diurutkan berdasarkan nama guru (A-Z).
     </div>
 </div>
 
@@ -323,36 +313,30 @@
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyDKR4e_9uHBhBqQEdxR7s2R807fawb7J8Y",
-    authDomain: "absensi-toi.firebaseapp.com",
-    projectId: "absensi-toi",
-    storageBucket: "absensi-toi.firebasestorage.app",
-    messagingSenderId: "1069310497322",
-    appId: "1:1069310497322:web:2705d66e041c41a1626953"
-};
+    const firebaseConfig = {
+        apiKey: "AIzaSyDKR4e_9uHBhBqQEdxR7s2R807fawb7J8Y",
+        authDomain: "absensi-toi.firebaseapp.com",
+        projectId: "absensi-toi",
+        storageBucket: "absensi-toi.firebasestorage.app",
+        messagingSenderId: "1069310497322",
+        appId: "1:1069310497322:web:2705d66e041c41a1626953"
+    };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
-onAuthStateChanged(auth, (user) => {
-    if (!user || user.email !== "teknikotomasiindustri.nepan@gmail.com") {
-        window.location.href = 'index.html';
-    }
-});
     const namaGuruInput = document.getElementById('namaGuruInput');
     const tambahGuruBtn = document.getElementById('tambahGuruBtn');
     const guruTbody = document.getElementById('guruTbody');
     const importCsvBtn = document.getElementById('importCsvBtn');
     const csvFileInput = document.getElementById('csvFileInput');
     const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
-    const authStatus = document.getElementById('authStatus');
-    const mainContent = document.getElementById('mainContent');
     
-    // Modal elements
     const modal = document.getElementById('mapelModal');
     const modalGuruNama = document.getElementById('modalGuruNama');
     const mapelListContainer = document.getElementById('mapelListContainer');
@@ -362,21 +346,16 @@ onAuthStateChanged(auth, (user) => {
     const closeModalBtns = document.querySelectorAll('.close-modal');
 
     let currentEditingGuruId = null;
-    let currentMapelArray = []; // array of {kelompok, mapel, kode}
+    let currentMapelArray = [];
 
-    // Helper: generate kode otomatis dari nama mapel (huruf kapital pertama setiap kata, maks 5)
     function generateKodeFromMapel(mapel) {
         if (!mapel) return '';
         const words = mapel.trim().split(/\s+/);
-        let initials = words.map(word => {
-            const firstChar = word.charAt(0);
-            return firstChar.toUpperCase();
-        }).join('');
+        let initials = words.map(word => word.charAt(0).toUpperCase()).join('');
         if (initials.length > 5) initials = initials.substring(0, 5);
         return initials;
     }
 
-    // Fungsi untuk mengurutkan guru berdasarkan nama dan renumber
     async function sortAndRenumberGuru() {
         const guruRef = collection(db, "guru");
         const snapshot = await getDocs(guruRef);
@@ -397,7 +376,6 @@ onAuthStateChanged(auth, (user) => {
         await batch.commit();
     }
 
-    // Load dan tampilkan semua guru
     async function loadGuru() {
         try {
             const guruRef = collection(db, "guru");
@@ -409,7 +387,6 @@ onAuthStateChanged(auth, (user) => {
             let guruList = [];
             snapshot.forEach(docSnap => {
                 let mapelList = docSnap.data().mapel || [];
-                // Pastikan setiap item memiliki kode (generate jika kosong)
                 mapelList = mapelList.map(item => {
                     if (!item.kode && item.mapel) {
                         return { ...item, kode: generateKodeFromMapel(item.mapel) };
@@ -457,7 +434,6 @@ onAuthStateChanged(auth, (user) => {
             });
             guruTbody.innerHTML = html;
             
-            // Pasang event listener untuk tombol edit mapel (setelah HTML di-inject)
             document.querySelectorAll('.btn-edit-mapel').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const guruId = btn.getAttribute('data-id');
@@ -466,7 +442,6 @@ onAuthStateChanged(auth, (user) => {
                 });
             });
             
-            // Event hapus guru
             document.querySelectorAll('.btn-hapus-guru').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const guruId = btn.getAttribute('data-id');
@@ -479,16 +454,14 @@ onAuthStateChanged(auth, (user) => {
             });
         } catch (error) {
             console.error("Error load guru: ", error);
-            guruTbody.innerHTML = '<tr><td colspan="6">Gagal memuat data guru.</td></tr>';
+            guruTbody.innerHTML = '<tr><td colspan="6">Gagal memuat data guru. Error: ' + error.message + '</td></td>';
         }
     }
 
-    // Modal untuk mengedit mapel
     async function openModal(guruId, guruNama) {
         currentEditingGuruId = guruId;
         modalGuruNama.innerText = guruNama;
         try {
-            // Ambil data mapel terbaru dari firestore
             const guruRef = doc(db, "guru", guruId);
             const guruSnap = await getDoc(guruRef);
             if (guruSnap.exists()) {
@@ -525,7 +498,7 @@ onAuthStateChanged(auth, (user) => {
             `;
             mapelListContainer.appendChild(div);
         });
-        // Event remove
+        
         document.querySelectorAll('.btn-remove-mapel').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const idx = parseInt(btn.getAttribute('data-idx'));
@@ -533,21 +506,20 @@ onAuthStateChanged(auth, (user) => {
                 renderMapelForm();
             });
         });
-        // Event update on input
+        
         document.querySelectorAll('.kelompok-input').forEach(inp => {
             inp.addEventListener('input', (e) => {
                 const idx = parseInt(inp.getAttribute('data-idx'));
                 currentMapelArray[idx].kelompok = inp.value;
             });
         });
+        
         document.querySelectorAll('.mapel-input').forEach(inp => {
             inp.addEventListener('input', (e) => {
                 const idx = parseInt(inp.getAttribute('data-idx'));
                 currentMapelArray[idx].mapel = inp.value;
-                // Jika kode kosong, generate otomatis dari nama mapel
                 if (!currentMapelArray[idx].kode) {
                     const generated = generateKodeFromMapel(inp.value);
-                    // Cari input kode di baris ini dan update nilainya
                     const rowDiv = inp.closest('.mapel-row');
                     if (rowDiv) {
                         const kodeInput = rowDiv.querySelector('.kode-input');
@@ -559,6 +531,7 @@ onAuthStateChanged(auth, (user) => {
                 }
             });
         });
+        
         document.querySelectorAll('.kode-input').forEach(inp => {
             inp.addEventListener('input', (e) => {
                 const idx = parseInt(inp.getAttribute('data-idx'));
@@ -574,9 +547,7 @@ onAuthStateChanged(auth, (user) => {
 
     async function saveMapelToFirebase() {
         if (!currentEditingGuruId) return;
-        // Filter kosong (minimal salah satu kelompok atau mapel tidak kosong)
         const filtered = currentMapelArray.filter(m => m.kelompok.trim() !== '' || m.mapel.trim() !== '');
-        // Pastikan setiap item memiliki kode, jika kosong generate dari mapel
         const finalMapel = filtered.map(m => ({
             kelompok: m.kelompok,
             mapel: m.mapel,
@@ -586,7 +557,7 @@ onAuthStateChanged(auth, (user) => {
             const guruRef = doc(db, "guru", currentEditingGuruId);
             await updateDoc(guruRef, { mapel: finalMapel });
             modal.style.display = 'none';
-            loadGuru(); // refresh
+            loadGuru();
         } catch (error) {
             console.error("Error saving mapel:", error);
             alert("Gagal menyimpan mapel.");
@@ -603,7 +574,6 @@ onAuthStateChanged(auth, (user) => {
     });
     saveMapelBtn.addEventListener('click', saveMapelToFirebase);
 
-    // Tambah guru manual
     async function tambahGuru() {
         const nama = namaGuruInput.value.trim();
         if (!nama) {
@@ -619,14 +589,13 @@ onAuthStateChanged(auth, (user) => {
             await sortAndRenumberGuru();
             namaGuruInput.value = '';
             loadGuru();
-            alert(`Guru "${nama}" berhasil ditambahkan. Sekarang tambahkan mapel melalui tombol Edit.`);
+            alert(`Guru "${nama}" berhasil ditambahkan.`);
         } catch (error) {
             console.error("Error tambah guru: ", error);
             alert("Gagal menambah guru.");
         }
     }
 
-    // ---------- CSV Parser dengan dukungan kutip ----------
     function parseCSVLine(line) {
         const result = [];
         let current = '';
@@ -663,7 +632,7 @@ onAuthStateChanged(auth, (user) => {
             alert("CSV harus memiliki kolom 'nama'.");
             return [];
         }
-        const guruMap = new Map(); // key: nama, value: array of {kelompok, mapel, kode}
+        const guruMap = new Map();
         for (let i = 1; i < lines.length; i++) {
             const fields = parseCSVLine(lines[i]);
             if (fields.length <= namaIndex) continue;
@@ -679,7 +648,6 @@ onAuthStateChanged(auth, (user) => {
                 guruMap.get(nama).push({ kelompok, mapel, kode });
             }
         }
-        // Konversi ke array
         const guruList = [];
         for (let [nama, mapelList] of guruMap.entries()) {
             guruList.push({ nama, mapel: mapelList });
@@ -704,7 +672,6 @@ onAuthStateChanged(auth, (user) => {
                     await Promise.all(deletePromises);
                     
                     for (const guru of guruList) {
-                        // Pastikan setiap mapel memiliki kode, generate jika kosong
                         const mapelWithKode = guru.mapel.map(m => ({
                             ...m,
                             kode: m.kode || generateKodeFromMapel(m.mapel)
@@ -743,10 +710,9 @@ onAuthStateChanged(auth, (user) => {
             });
     });
 
-    // Download template CSV (dengan kelompok, mapel, kode)
     function downloadTemplate() {
         const templateContent = `nama,kelompok,mapel,kode
-"Irffan Saktiansyah, S.T","Sistem Kontrol Elektromekanik","Sistem Kontrol Elektromekanik","SKE"
+"Irfan Saktiansyah, S.T","Sistem Kontrol Elektromekanik","Sistem Kontrol Elektromekanik","SKE"
 "Wahyu Ikhsannudin, M.Pd","Elektronika","Elektronika Dasar","ELD"
 "Wahyu Ikhsannudin, M.Pd","PLC","Pemrograman PLC","PLC"
 "Asep Bangbang Purnawan, S.T","Sistem Kontrol","Sistem Kontrol Elektropneumatik","SKP"`;
@@ -774,20 +740,18 @@ onAuthStateChanged(auth, (user) => {
         });
     }
 
-    // Autentikasi
+    // Guard: hanya admin yang boleh mengakses halaman ini
     onAuthStateChanged(auth, (user) => {
-        if (user) {
-            authStatus.style.display = 'none';
-            mainContent.style.display = 'block';
-            loadGuru();
-        } else {
-            authStatus.innerHTML = '🔄 Melakukan login anonim...';
-            signInAnonymously(auth).catch((error) => {
-                console.error("Gagal login anonim:", error);
-                authStatus.innerHTML = '❌ Gagal terhubung ke Firebase. Pastikan autentikasi anonim diaktifkan.';
-                authStatus.style.color = 'red';
-            });
+        if (!user) {
+            window.location.href = 'index.html';
+            return;
         }
+        if (user.email !== "teknikotomasiindustri.nepan@gmail.com") {
+            window.location.href = 'dashboard_guru.html';
+            return;
+        }
+        // User adalah admin, load data
+        loadGuru();
     });
 </script>
 </body>
