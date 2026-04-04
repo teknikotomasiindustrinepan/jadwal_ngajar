@@ -301,6 +301,11 @@
             padding: 6px 12px;
             margin-left: 10px;
         }
+        .subtitle-mapel {
+            font-size: 0.7rem;
+            color: #6c86a0;
+            margin-left: 5px;
+        }
         @media (max-width: 700px) {
             body { padding: 15px; }
             .header { padding: 18px; }
@@ -345,12 +350,14 @@
             <div class="info-bar">
                 <div class="info-bar-item"><i class="fas fa-user"></i><div><div style="font-size:0.7rem;">Guru</div><strong id="guruNamaInfo">-</strong></div></div>
                 <div class="info-bar-item"><i class="fas fa-calendar-week"></i><div><div style="font-size:0.7rem;">Minggu</div><strong id="mingguInfo">-</strong></div></div>
-                <div class="info-bar-item"><i class="fas fa-chalkboard"></i><div><div style="font-size:0.7rem;">Mapel Diajar</div><strong id="totalMapelInfo">0</strong></div></div>
+                <div class="info-bar-item"><i class="fas fa-chalkboard"></i><div><div style="font-size:0.7rem;">Kelas Diajar</div><strong id="totalMapelInfo">0</strong></div></div>
             </div>
 
             <div id="warningMessage" class="warning-state" style="display: none;"></div>
 
-            <div id="mapelTabs" class="mapel-tabs" style="display: none;"></div>
+            <!-- Tab Kelas (bukan kode mapel) -->
+            <div id="kelasTabs" class="mapel-tabs" style="display: none;"></div>
+            
             <div id="mapelHeaderInfo" class="mapel-header-info" style="display: none;">
                 <span><i class="fas fa-code"></i> <strong id="activeMapelKode">-</strong></span>
                 <span><i class="fas fa-book-open"></i> <strong id="activeMapelNama">-</strong></span>
@@ -363,7 +370,6 @@
             <div id="successMsg" class="success-msg"><i class="fas fa-check-circle"></i> Absensi berhasil disimpan!</div>
 
             <div class="card">
-                <!-- Tombol aksi massal -->
                 <div id="actionPanel" class="action-buttons" style="display: none;">
                     <span style="font-weight: 600;"><i class="fas fa-tasks"></i> Aksi Cepat:</span>
                     <button id="btnSetHadir" class="btn-status btn-hadir" style="background:#28a745;">✓ H (Hadir)</button>
@@ -402,7 +408,7 @@
             </div>
         </div>
     </div>
-    <div class="footer-note"><i class="fas fa-clock"></i> Pilih hari terlebih dahulu untuk mengisi kehadiran. Gunakan tombol aksi cepat untuk mengisi semua siswa sekaligus.</div>
+    <div class="footer-note"><i class="fas fa-clock"></i> Pilih kelas (tab) terlebih dahulu, lalu pilih hari untuk mengisi kehadiran.</div>
 </div>
 
 <script type="module">
@@ -433,7 +439,7 @@
     const guruNamaInfo = document.getElementById('guruNamaInfo');
     const mingguInfo = document.getElementById('mingguInfo');
     const totalMapelInfo = document.getElementById('totalMapelInfo');
-    const mapelTabs = document.getElementById('mapelTabs');
+    const kelasTabs = document.getElementById('kelasTabs');
     const mapelHeaderInfo = document.getElementById('mapelHeaderInfo');
     const activeMapelKode = document.getElementById('activeMapelKode');
     const activeMapelNama = document.getElementById('activeMapelNama');
@@ -461,11 +467,11 @@
     let daftarMinggu = [];
     let currentGuru = null;
     let currentMinggu = null;
-    let allTeachingResults = [];
-    let activeMapelIndex = 0;
+    let allTeachingResults = []; // { kelas, mapel, slotsPerHari, siswaList }
+    let activeKelasIndex = 0;
     let activeHari = null;
     let absensiData = new Map();
-    let currentMapelItem = null; // untuk referensi di fungsi massal
+    let currentKelasItem = null;
 
     const statusConfig = {
         'H': { label: 'Hadir', class: 'status-hadir', full: 'Hadir' },
@@ -596,15 +602,20 @@
                     siswaList = await getAllSiswaInKelas(kelas.id);
                 }
                 if (siswaList.length === 0) continue;
-                results.push({ kelas, mapel: { kode, nama, kelompok }, slotsPerHari, siswaList });
+                results.push({ 
+                    kelas: kelas, 
+                    mapel: { kode, nama, kelompok }, 
+                    slotsPerHari, 
+                    siswaList 
+                });
             }
         }
         return results;
     }
 
-    async function loadExistingAbsensiForMapelHari(mapelItem, hari) {
+    async function loadExistingAbsensiForKelasHari(kelasItem, hari) {
         if (!currentMinggu) return;
-        const { kelas, mapel, slotsPerHari, siswaList } = mapelItem;
+        const { kelas, mapel, slotsPerHari, siswaList } = kelasItem;
         const jps = slotsPerHari[hari] || [];
         if (jps.length === 0) return;
         for (let siswa of siswaList) {
@@ -619,10 +630,9 @@
         }
     }
 
-    // Fungsi untuk mengisi semua input dengan status tertentu
     function fillAllStatus(status) {
-        if (!activeHari || !currentMapelItem) return;
-        const { slotsPerHari, siswaList } = currentMapelItem;
+        if (!activeHari || !currentKelasItem) return;
+        const { slotsPerHari, siswaList } = currentKelasItem;
         const jps = slotsPerHari[activeHari] || [];
         if (jps.length === 0) return;
         
@@ -630,7 +640,6 @@
             for (let jp of jps) {
                 const key = `${siswa.id}_${activeHari}_${jp}`;
                 absensiData.set(key, status);
-                // Update tampilan input
                 const input = document.querySelector(`.status-input[data-siswa-id="${siswa.id}"][data-hari="${activeHari}"][data-jp="${jp}"]`);
                 if (input) {
                     input.value = status;
@@ -639,18 +648,13 @@
                 }
             }
         }
-        
         const statusName = statusConfig[status]?.label || status || 'Kosong';
         showSuccessMessage(`Semua diisi dengan status ${statusName}`, 1500);
     }
 
-    function resetAllStatus() {
-        fillAllStatus('');
-    }
-
-    function renderTableForHari(mapelItem, hari) {
-        currentMapelItem = mapelItem;
-        const { kelas, mapel, slotsPerHari, siswaList } = mapelItem;
+    function renderTableForHari(kelasItem, hari) {
+        currentKelasItem = kelasItem;
+        const { kelas, mapel, slotsPerHari, siswaList } = kelasItem;
         const jps = slotsPerHari[hari] || [];
         if (siswaList.length === 0 || jps.length === 0) {
             absensiTbody.innerHTML = `<tr><td colspan="2" class="empty-state">Tidak ada siswa atau JP untuk hari ${hari}</td></tr>`;
@@ -682,7 +686,6 @@
         absensiTbody.innerHTML = bodyHtml;
         activeSiswaCount.textContent = siswaList.length;
 
-        // Attach event listeners untuk input individual
         document.querySelectorAll('.status-input').forEach(inp => {
             inp.addEventListener('input', (e) => {
                 let val = inp.value.trim().toUpperCase();
@@ -697,8 +700,8 @@
         });
     }
 
-    async function saveAbsensiForHari(mapelItem, hari) {
-        const { siswaList, slotsPerHari, mapel, kelas } = mapelItem;
+    async function saveAbsensiForHari(kelasItem, hari) {
+        const { siswaList, slotsPerHari, mapel, kelas } = kelasItem;
         const jps = slotsPerHari[hari] || [];
         let success = 0, total = 0;
         for (let siswa of siswaList) {
@@ -727,9 +730,9 @@
 
     async function saveCurrentHari() {
         if (!activeHari) { alert("Pilih hari terlebih dahulu."); return; }
-        const mapelItem = allTeachingResults[activeMapelIndex];
-        if (!mapelItem) return;
-        const { success, total } = await saveAbsensiForHari(mapelItem, activeHari);
+        const kelasItem = allTeachingResults[activeKelasIndex];
+        if (!kelasItem) return;
+        const { success, total } = await saveAbsensiForHari(kelasItem, activeHari);
         if (success > 0) {
             showSuccessMessage(`Berhasil menyimpan ${success} dari ${total} absensi untuk hari ${activeHari}.`);
         } else {
@@ -743,37 +746,44 @@
         setTimeout(() => successMsg.style.display = 'none', duration);
     }
 
-    function renderMapelTabs() {
+    function renderKelasTabs() {
         if (allTeachingResults.length === 0) {
-            mapelTabs.style.display = 'none';
+            kelasTabs.style.display = 'none';
             mapelHeaderInfo.style.display = 'none';
             hariTabs.style.display = 'none';
             actionPanel.style.display = 'none';
-            absensiTbody.innerHTML = '<tr><td colspan="2" class="empty-state">Tidak ada mapel yang diajar</td></tr>';
+            absensiTbody.innerHTML = '<tr><td colspan="2" class="empty-state">Tidak ada kelas yang diajar pada minggu ini</td></tr>';
             return;
         }
-        mapelTabs.style.display = 'flex';
+        kelasTabs.style.display = 'flex';
         let html = '';
         allTeachingResults.forEach((item, idx) => {
-            html += `<div class="mapel-tab ${idx === activeMapelIndex ? 'active' : ''}" data-mapel-idx="${idx}">${item.mapel.kode}<span class="badge-count">${item.siswaList.length}</span></div>`;
+            const isActive = idx === activeKelasIndex;
+            html += `<div class="mapel-tab ${isActive ? 'active' : ''}" data-kelas-idx="${idx}">
+                        ${item.kelas.nama}
+                        <span class="badge-count">${item.siswaList.length}</span>
+                    </div>`;
         });
-        mapelTabs.innerHTML = html;
+        kelasTabs.innerHTML = html;
+        
         document.querySelectorAll('.mapel-tab').forEach(tab => {
             tab.addEventListener('click', async (e) => {
-                const idx = parseInt(tab.dataset.mapelIdx);
-                if (idx !== activeMapelIndex) {
-                    activeMapelIndex = idx;
+                const idx = parseInt(tab.dataset.kelasIdx);
+                if (idx !== activeKelasIndex) {
+                    activeKelasIndex = idx;
                     activeHari = null;
-                    await switchToMapel(activeMapelIndex);
+                    await switchToKelas(activeKelasIndex);
                 }
             });
         });
     }
 
-    async function switchToMapel(idx) {
-        const mapelItem = allTeachingResults[idx];
-        if (!mapelItem) return;
-        const { kelas, mapel, slotsPerHari, siswaList } = mapelItem;
+    async function switchToKelas(idx) {
+        const kelasItem = allTeachingResults[idx];
+        if (!kelasItem) return;
+        const { kelas, mapel, slotsPerHari, siswaList } = kelasItem;
+        
+        // Tampilkan info mapel di header
         activeMapelKode.textContent = mapel.kode;
         activeMapelNama.textContent = mapel.nama;
         activeKelasName.textContent = kelas.nama;
@@ -784,9 +794,10 @@
         if (hariList.length === 0) {
             hariTabs.style.display = 'none';
             actionPanel.style.display = 'none';
-            absensiTbody.innerHTML = '<tr><td colspan="2" class="empty-state">Tidak ada hari mengajar untuk mapel ini</td></tr>';
+            absensiTbody.innerHTML = '<tr><td colspan="2" class="empty-state">Tidak ada hari mengajar untuk kelas ini</td></tr>';
             return;
         }
+        
         let hariHtml = '';
         for (let hari of hariList) {
             let tanggal = '';
@@ -818,8 +829,8 @@
                 activeHari = hr;
                 document.querySelectorAll('.hari-tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
-                await loadExistingAbsensiForMapelHari(mapelItem, activeHari);
-                renderTableForHari(mapelItem, activeHari);
+                await loadExistingAbsensiForKelasHari(kelasItem, activeHari);
+                renderTableForHari(kelasItem, activeHari);
             });
         });
     }
@@ -835,7 +846,7 @@
         absensiTbody.innerHTML = '<tr><td colspan="2" class="loading"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>';
         absensiPanel.style.display = 'block';
         warningMessage.style.display = 'none';
-        mapelTabs.style.display = 'none';
+        kelasTabs.style.display = 'none';
         mapelHeaderInfo.style.display = 'none';
         hariTabs.style.display = 'none';
         actionPanel.style.display = 'none';
@@ -844,6 +855,7 @@
         mingguInfo.textContent = `Minggu ${currentMinggu.mingguKe} (${currentMinggu.tanggalMulai} - ${currentMinggu.tanggalAkhir})`;
 
         allTeachingResults = await findAllTeacherSchedules(currentGuru, mingguKe);
+        
         if (allTeachingResults.length === 0) {
             const guruMapelList = currentGuru.mapelList.map(m => `${m.kode} - ${m.nama}`).join(', ');
             warningMessage.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Guru tidak mengajar pada minggu ini.<br>Mapel: ${guruMapelList}<br>Pastikan kelompok mapel sesuai dengan jadwal kelas.`;
@@ -854,10 +866,10 @@
         }
 
         totalMapelInfo.textContent = allTeachingResults.length;
-        activeMapelIndex = 0;
+        activeKelasIndex = 0;
         activeHari = null;
-        renderMapelTabs();
-        await switchToMapel(0);
+        renderKelasTabs();
+        await switchToKelas(0);
     }
 
     function escapeHtml(str) {
@@ -881,11 +893,8 @@
     btnResetAll.addEventListener('click', () => fillAllStatus(''));
     btnApplyBulk.addEventListener('click', () => {
         const status = bulkStatusSelect.value;
-        if (status === '') {
-            fillAllStatus('');
-        } else if (status) {
-            fillAllStatus(status);
-        }
+        if (status === '') fillAllStatus('');
+        else if (status) fillAllStatus(status);
     });
 
     loadBtn.addEventListener('click', loadAbsensi);
