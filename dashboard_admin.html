@@ -9,17 +9,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: #eef2f8; min-height: 100vh; }
-        .header {
-            background: linear-gradient(135deg, #1a4a6f, #2c7a4d);
-            color: white;
-            padding: 20px 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
+        .header { background: linear-gradient(135deg, #1a4a6f, #2c7a4d); color: white; padding: 20px 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .logo h1 { font-size: 1.5rem; display: flex; align-items: center; gap: 10px; }
         .logo i { font-size: 1.8rem; }
         .user-info { display: flex; align-items: center; gap: 20px; background: rgba(255,255,255,0.15); padding: 8px 20px; border-radius: 40px; }
@@ -37,16 +27,11 @@
         .menu-card p { font-size: 0.8rem; color: #6c86a0; }
         .footer-note { text-align: center; margin-top: 40px; font-size: 0.7rem; color: #6c86a0; background: #f6fafd; padding: 12px; border-radius: 24px; }
         .loading-screen { display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 1.2rem; color: #2c7a4d; flex-direction: column; gap: 16px; }
-        .error-message { color: #d9534f; background: #f8d7da; padding: 12px 24px; border-radius: 30px; font-size: 0.9rem; }
         @media (max-width: 700px) { .header { padding: 16px 20px; flex-direction: column; text-align: center; } .menu-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
-    <div id="loading" class="loading-screen">
-        <i class="fas fa-spinner fa-spin fa-2x"></i>
-        <span>Memeriksa akses...</span>
-    </div>
-
+    <div id="loading" class="loading-screen"><i class="fas fa-spinner fa-spin fa-2x"></i><span>Memeriksa akses...</span></div>
     <div id="dashboardContent" style="display: none;">
         <div class="header">
             <div class="logo"><h1><i class="fas fa-chalkboard-user"></i> Teknik Otomasi Industri</h1></div>
@@ -55,26 +40,13 @@
         <div class="container">
             <div class="welcome-card"><h2><i class="fas fa-chalkboard"></i> Dashboard Guru</h2><p>Selamat datang, Guru. Gunakan menu di bawah untuk mengisi absensi dan melihat jadwal mengajar.</p></div>
             <div class="menu-grid">
-                <div class="menu-card" data-link="gurungabsen.html">
-                    <div class="menu-icon"><i class="fas fa-clipboard-list"></i></div>
-                    <h3>Absensi Teaching Factory</h3>
-                    <p>Input kehadiran siswa per jam pelajaran</p>
-                </div>
-                <div class="menu-card" data-link="tampilan_jadwal.html">
-                    <div class="menu-icon"><i class="fas fa-calendar-alt"></i></div>
-                    <h3>Lihat Jadwal Kelas</h3>
-                    <p>Cek jadwal mengajar semua kelas</p>
-                </div>
-                <div class="menu-card" data-link="guru.html">
-                    <div class="menu-icon"><i class="fas fa-chalkboard-user"></i></div>
-                    <h3>Info Guru & Mapel</h3>
-                    <p>Lihat data guru dan kode mapel (hanya baca)</p>
-                </div>
+                <div class="menu-card" data-link="gurungabsen.html"><div class="menu-icon"><i class="fas fa-clipboard-list"></i></div><h3>Absensi Teaching Factory</h3><p>Input kehadiran siswa per jam pelajaran</p></div>
+                <div class="menu-card" data-link="tampilan_jadwal.html"><div class="menu-icon"><i class="fas fa-calendar-alt"></i></div><h3>Lihat Jadwal Kelas</h3><p>Cek jadwal mengajar semua kelas</p></div>
+                <div class="menu-card" data-link="guru.html"><div class="menu-icon"><i class="fas fa-chalkboard-user"></i></div><h3>Info Guru & Mapel</h3><p>Lihat data guru dan kode mapel (hanya baca)</p></div>
             </div>
             <div class="footer-note"><i class="fas fa-shield-alt"></i> Sistem Absensi Teaching Factory - Teknik Otomasi Industri</div>
         </div>
     </div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -88,7 +60,6 @@
             messagingSenderId: "1069310497322",
             appId: "1:1069310497322:web:2705d66e041c41a1626953"
         };
-
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -97,88 +68,36 @@
         const dashboardDiv = document.getElementById('dashboardContent');
         const userEmailSpan = document.getElementById('userEmail');
 
-        // Fungsi sederhana untuk menentukan role
-        async function getUserRole(user) {
-            if (!user) return null;
-            // Admin berdasarkan email
-            if (user.email === "teknikotomasiindustri.nepan@gmail.com") {
-                return "admin";
-            }
-            // User anonim dianggap guru
-            if (user.isAnonymous) {
-                return "guru";
-            }
-            // Cek dari Firestore untuk user email biasa
-            try {
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                if (userDoc.exists()) {
-                    const role = userDoc.data().role;
-                    if (role === "guru" || role === "orangtua") return role;
-                }
-            } catch (e) {
-                console.warn("Gagal baca role dari Firestore:", e);
-            }
-            // Default: jika tidak dikenal, tetap izinkan sebagai guru (tapi nanti bisa logout jika perlu)
-            return "guru";
-        }
-
         onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                window.location.href = 'index.html';
-                return;
-            }
-
+            if (!user) { window.location.href = 'index.html'; return; }
             try {
-                const role = await getUserRole(user);
-                console.log("Role terdeteksi:", role, "User:", user.email || user.uid);
-
-                if (role === 'admin') {
+                // Cek apakah admin? jika admin redirect ke dashboard admin
+                if (user.email === "teknikotomasiindustri.nepan@gmail.com") {
                     window.location.href = 'dashboard_admin.html';
                     return;
                 }
-                
-                if (role === 'guru' || role === 'orangtua' || user.isAnonymous) {
-                    // Tampilkan dashboard guru
-                    let displayName = user.email || (user.isAnonymous ? 'Guru (Anonim)' : user.uid);
-                    userEmailSpan.textContent = displayName;
+                // Cek role dari Firestore
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists() && userDoc.data().role === 'guru') {
+                    userEmailSpan.textContent = user.email || user.uid;
                     loadingDiv.style.display = 'none';
                     dashboardDiv.style.display = 'block';
                 } else {
-                    // Role tidak valid, logout
-                    console.warn("Role tidak dikenal, logout");
+                    // Bukan guru, logout
                     await signOut(auth);
                     window.location.href = 'index.html';
                 }
             } catch (err) {
-                console.error("Error saat pengecekan role:", err);
-                // Tampilkan error di loading screen
-                loadingDiv.innerHTML = `
-                    <i class="fas fa-exclamation-triangle fa-2x" style="color:#d9534f;"></i>
-                    <span class="error-message">Gagal memverifikasi akses. Periksa koneksi atau login ulang.</span>
-                    <button id="retryBtn" class="btn-logout" style="margin-top:16px;">Coba Lagi</button>
-                `;
-                document.getElementById('retryBtn')?.addEventListener('click', () => {
-                    window.location.reload();
-                });
+                console.error(err);
+                loadingDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Gagal verifikasi akses. <button onclick="location.reload()">Ulangi</button>';
             }
         });
-
-        // Logout
-        document.getElementById('logoutBtn')?.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-                window.location.href = 'index.html';
-            } catch (error) {
-                alert("Gagal logout: " + error.message);
-            }
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await signOut(auth);
+            window.location.href = 'index.html';
         });
-
-        // Redirect menu card
         document.querySelectorAll('.menu-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const link = card.getAttribute('data-link');
-                if (link) window.location.href = link;
-            });
+            card.addEventListener('click', () => { if(card.dataset.link) window.location.href = card.dataset.link; });
         });
     </script>
 </body>
