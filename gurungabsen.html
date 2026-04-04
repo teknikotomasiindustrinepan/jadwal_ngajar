@@ -185,7 +185,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 0.85rem;
-            min-width: 400px;
+            min-width: 500px;
         }
         th {
             background: #eef4fa;
@@ -201,7 +201,7 @@
             vertical-align: middle;
         }
         .status-input {
-            width: 70px;
+            width: 65px;
             padding: 6px 8px;
             border-radius: 24px;
             border: 1px solid #cbdde6;
@@ -274,37 +274,17 @@
             flex-wrap: wrap;
             gap: 12px;
         }
-        .action-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 16px;
-            padding: 12px;
-            background: #f9fbfd;
+        .bulk-select {
+            padding: 6px 12px;
             border-radius: 20px;
-            align-items: center;
-        }
-        .action-buttons .btn-status {
-            padding: 6px 16px;
+            border: 1px solid #cfdfea;
+            background: white;
             font-size: 0.8rem;
             width: auto;
-            border-radius: 30px;
+            cursor: pointer;
         }
-        .btn-hadir { background: #28a745; }
-        .btn-sakit { background: #ffc107; color: #856404; }
-        .btn-izin { background: #17a2b8; }
-        .btn-alpha { background: #dc3545; }
-        .btn-terlambat { background: #6f42c1; }
-        .btn-reset { background: #6c757d; }
-        .select-status {
-            width: auto;
-            padding: 6px 12px;
-            margin-left: 10px;
-        }
-        .subtitle-mapel {
-            font-size: 0.7rem;
-            color: #6c86a0;
-            margin-left: 5px;
+        .siswa-name {
+            font-weight: 600;
         }
         @media (max-width: 700px) {
             body { padding: 15px; }
@@ -313,8 +293,7 @@
             th, td { padding: 8px 6px; }
             .status-input { width: 55px; padding: 4px; font-size: 0.75rem; }
             .mapel-tab, .hari-tab { padding: 6px 12px; font-size: 0.75rem; }
-            .action-buttons { flex-direction: column; align-items: stretch; }
-            .action-buttons .btn-status { width: 100%; text-align: center; }
+            .bulk-select { font-size: 0.7rem; padding: 4px 8px; }
         }
     </style>
 </head>
@@ -355,7 +334,7 @@
 
             <div id="warningMessage" class="warning-state" style="display: none;"></div>
 
-            <!-- Tab Kelas (bukan kode mapel) -->
+            <!-- Tab Kelas -->
             <div id="kelasTabs" class="mapel-tabs" style="display: none;"></div>
             
             <div id="mapelHeaderInfo" class="mapel-header-info" style="display: none;">
@@ -370,27 +349,6 @@
             <div id="successMsg" class="success-msg"><i class="fas fa-check-circle"></i> Absensi berhasil disimpan!</div>
 
             <div class="card">
-                <div id="actionPanel" class="action-buttons" style="display: none;">
-                    <span style="font-weight: 600;"><i class="fas fa-tasks"></i> Aksi Cepat:</span>
-                    <button id="btnSetHadir" class="btn-status btn-hadir" style="background:#28a745;">✓ H (Hadir)</button>
-                    <button id="btnSetSakit" class="btn-status btn-sakit" style="background:#ffc107; color:#856404;">🤒 S (Sakit)</button>
-                    <button id="btnSetIzin" class="btn-status btn-izin" style="background:#17a2b8;">📝 I (Izin)</button>
-                    <button id="btnSetAlpha" class="btn-status btn-alpha" style="background:#dc3545;">✗ A (Alpha)</button>
-                    <button id="btnSetTerlambat" class="btn-status btn-terlambat" style="background:#6f42c1;">⏰ T (Terlambat)</button>
-                    <button id="btnResetAll" class="btn-status btn-reset" style="background:#6c757d;">🗑️ Reset Semua</button>
-                    <div style="flex:1"></div>
-                    <select id="bulkStatusSelect" style="width: auto; padding: 6px 12px;">
-                        <option value="">-- Pilih Status --</option>
-                        <option value="H">✓ Hadir (H)</option>
-                        <option value="S">🤒 Sakit (S)</option>
-                        <option value="I">📝 Izin (I)</option>
-                        <option value="A">✗ Alpha (A)</option>
-                        <option value="T">⏰ Terlambat (T)</option>
-                        <option value="">--- Kosongkan ---</option>
-                    </select>
-                    <button id="btnApplyBulk" class="btn-outline" style="width: auto; padding: 6px 16px;">Terapkan</button>
-                </div>
-
                 <div class="table-wrapper">
                     <table id="absensiTable">
                         <thead id="absensiHeader"></thead>
@@ -403,12 +361,12 @@
                     <button id="saveAllBtn" class="btn-save"><i class="fas fa-save"></i> Simpan Semua (Hari Ini)</button>
                 </div>
                 <div class="keterangan-info">
-                    <i class="fas fa-info-circle"></i> Kode Status: <strong>H</strong> = Hadir, <strong>I</strong> = Izin, <strong>S</strong> = Sakit, <strong>A</strong> = Alpha, <strong>T</strong> = Terlambat
+                    <i class="fas fa-info-circle"></i> Gunakan dropdown di setiap baris siswa untuk mengisi semua JP sekaligus. Kode Status: <strong>H</strong> = Hadir, <strong>I</strong> = Izin, <strong>S</strong> = Sakit, <strong>A</strong> = Alpha, <strong>T</strong> = Terlambat
                 </div>
             </div>
         </div>
     </div>
-    <div class="footer-note"><i class="fas fa-clock"></i> Pilih kelas (tab) terlebih dahulu, lalu pilih hari untuk mengisi kehadiran.</div>
+    <div class="footer-note"><i class="fas fa-clock"></i> Pilih kelas (tab) terlebih dahulu, lalu pilih hari untuk mengisi kehadiran. Dropdown di setiap siswa untuk isi otomatis semua JP.</div>
 </div>
 
 <script type="module">
@@ -451,23 +409,12 @@
     const saveAllBtn = document.getElementById('saveAllBtn');
     const successMsg = document.getElementById('successMsg');
     const warningMessage = document.getElementById('warningMessage');
-    const actionPanel = document.getElementById('actionPanel');
-
-    // Tombol aksi massal
-    const btnSetHadir = document.getElementById('btnSetHadir');
-    const btnSetSakit = document.getElementById('btnSetSakit');
-    const btnSetIzin = document.getElementById('btnSetIzin');
-    const btnSetAlpha = document.getElementById('btnSetAlpha');
-    const btnSetTerlambat = document.getElementById('btnSetTerlambat');
-    const btnResetAll = document.getElementById('btnResetAll');
-    const bulkStatusSelect = document.getElementById('bulkStatusSelect');
-    const btnApplyBulk = document.getElementById('btnApplyBulk');
 
     let daftarGuru = [];
     let daftarMinggu = [];
     let currentGuru = null;
     let currentMinggu = null;
-    let allTeachingResults = []; // { kelas, mapel, slotsPerHari, siswaList }
+    let allTeachingResults = [];
     let activeKelasIndex = 0;
     let activeHari = null;
     let absensiData = new Map();
@@ -630,26 +577,18 @@
         }
     }
 
-    function fillAllStatus(status) {
-        if (!activeHari || !currentKelasItem) return;
-        const { slotsPerHari, siswaList } = currentKelasItem;
-        const jps = slotsPerHari[activeHari] || [];
-        if (jps.length === 0) return;
-        
-        for (let siswa of siswaList) {
-            for (let jp of jps) {
-                const key = `${siswa.id}_${activeHari}_${jp}`;
-                absensiData.set(key, status);
-                const input = document.querySelector(`.status-input[data-siswa-id="${siswa.id}"][data-hari="${activeHari}"][data-jp="${jp}"]`);
-                if (input) {
-                    input.value = status;
-                    const statusClass = statusConfig[status]?.class || '';
-                    input.className = `status-input ${statusClass}`;
-                }
+    // Mengisi semua JP untuk satu siswa dengan status tertentu
+    function fillSiswaStatus(siswaId, status, hari, jps) {
+        for (let jp of jps) {
+            const key = `${siswaId}_${hari}_${jp}`;
+            absensiData.set(key, status);
+            const input = document.querySelector(`.status-input[data-siswa-id="${siswaId}"][data-hari="${hari}"][data-jp="${jp}"]`);
+            if (input) {
+                input.value = status;
+                const statusClass = statusConfig[status]?.class || '';
+                input.className = `status-input ${statusClass}`;
             }
         }
-        const statusName = statusConfig[status]?.label || status || 'Kosong';
-        showSuccessMessage(`Semua diisi dengan status ${statusName}`, 1500);
     }
 
     function renderTableForHari(kelasItem, hari) {
@@ -659,33 +598,69 @@
         if (siswaList.length === 0 || jps.length === 0) {
             absensiTbody.innerHTML = `<tr><td colspan="2" class="empty-state">Tidak ada siswa atau JP untuk hari ${hari}</td></tr>`;
             activeSiswaCount.textContent = siswaList.length;
-            actionPanel.style.display = 'none';
             return;
         }
         
-        actionPanel.style.display = 'flex';
-        
-        let headerHtml = '<tr><th>No</th><th>Nama Siswa</th>';
+        // Header tabel
+        let headerHtml = `<tr><th>No</th><th>Nama Siswa</th><th>Isi Semua JP</th>`;
         for (let jp of jps) headerHtml += `<th class="slot-header">JP ${jp}</th>`;
         headerHtml += '</tr>';
         absensiHeader.innerHTML = headerHtml;
 
+        // Body tabel
         let bodyHtml = '';
         for (let siswa of siswaList) {
             bodyHtml += `<tr data-siswa-id="${siswa.id}">`;
             bodyHtml += `<td>${siswa.no}</td>`;
-            bodyHtml += `<td><strong>${escapeHtml(siswa.nama)}</strong></td>`;
+            bodyHtml += `<td class="siswa-name">${escapeHtml(siswa.nama)}</td>`;
+            
+            // Dropdown untuk isi semua JP siswa ini
+            bodyHtml += `<td style="text-align:center">
+                <select class="bulk-select" data-siswa-id="${siswa.id}" data-hari="${hari}">
+                    <option value="">-- Pilih Status --</option>
+                    <option value="H">✓ Hadir (H)</option>
+                    <option value="S">🤒 Sakit (S)</option>
+                    <option value="I">📝 Izin (I)</option>
+                    <option value="A">✗ Alpha (A)</option>
+                    <option value="T">⏰ Terlambat (T)</option>
+                </select>
+            </td>`;
+            
+            // Kolom JP
             for (let jp of jps) {
                 const key = `${siswa.id}_${hari}_${jp}`;
                 const status = absensiData.get(key) || '';
                 const statusClass = statusConfig[status]?.class || '';
-                bodyHtml += `<td style="text-align:center"><input type="text" class="status-input ${statusClass}" data-siswa-id="${siswa.id}" data-hari="${hari}" data-jp="${jp}" value="${status}" maxlength="1" placeholder="H/I/S/A/T" style="text-transform:uppercase;"></td>`;
+                bodyHtml += `<td style="text-align:center">
+                    <input type="text" class="status-input ${statusClass}" 
+                           data-siswa-id="${siswa.id}" 
+                           data-hari="${hari}" 
+                           data-jp="${jp}" 
+                           value="${status}" 
+                           maxlength="1" 
+                           placeholder="H/I/S/A/T" 
+                           style="text-transform:uppercase;">
+                </td>`;
             }
             bodyHtml += '</tr>';
         }
         absensiTbody.innerHTML = bodyHtml;
         activeSiswaCount.textContent = siswaList.length;
 
+        // Event listener untuk dropdown per siswa
+        document.querySelectorAll('.bulk-select').forEach(select => {
+            select.addEventListener('change', (e) => {
+                const status = select.value;
+                if (!status) return;
+                const siswaId = select.dataset.siswaId;
+                const hr = select.dataset.hari;
+                fillSiswaStatus(siswaId, status, hr, jps);
+                select.value = ''; // reset dropdown
+                showSuccessMessage(`Status ${statusConfig[status]?.label} diterapkan untuk ${siswaList.find(s => s.id === siswaId)?.nama}`, 1500);
+            });
+        });
+
+        // Event listener untuk input manual per JP
         document.querySelectorAll('.status-input').forEach(inp => {
             inp.addEventListener('input', (e) => {
                 let val = inp.value.trim().toUpperCase();
@@ -751,7 +726,6 @@
             kelasTabs.style.display = 'none';
             mapelHeaderInfo.style.display = 'none';
             hariTabs.style.display = 'none';
-            actionPanel.style.display = 'none';
             absensiTbody.innerHTML = '<tr><td colspan="2" class="empty-state">Tidak ada kelas yang diajar pada minggu ini</td></tr>';
             return;
         }
@@ -783,7 +757,6 @@
         if (!kelasItem) return;
         const { kelas, mapel, slotsPerHari, siswaList } = kelasItem;
         
-        // Tampilkan info mapel di header
         activeMapelKode.textContent = mapel.kode;
         activeMapelNama.textContent = mapel.nama;
         activeKelasName.textContent = kelas.nama;
@@ -793,7 +766,6 @@
         const hariList = Object.keys(slotsPerHari);
         if (hariList.length === 0) {
             hariTabs.style.display = 'none';
-            actionPanel.style.display = 'none';
             absensiTbody.innerHTML = '<tr><td colspan="2" class="empty-state">Tidak ada hari mengajar untuk kelas ini</td></tr>';
             return;
         }
@@ -820,7 +792,6 @@
         absensiTbody.innerHTML = '<tr><td colspan="2" class="empty-state">Klik salah satu hari di atas untuk mulai mengisi kehadiran</td></tr>';
         activeHari = null;
         absensiData.clear();
-        actionPanel.style.display = 'none';
 
         document.querySelectorAll('.hari-tab').forEach(tab => {
             tab.addEventListener('click', async (e) => {
@@ -849,7 +820,6 @@
         kelasTabs.style.display = 'none';
         mapelHeaderInfo.style.display = 'none';
         hariTabs.style.display = 'none';
-        actionPanel.style.display = 'none';
 
         guruNamaInfo.textContent = currentGuru.nama;
         mingguInfo.textContent = `Minggu ${currentMinggu.mingguKe} (${currentMinggu.tanggalMulai} - ${currentMinggu.tanggalAkhir})`;
@@ -883,19 +853,6 @@
         loadingState.style.display = 'none';
         mainContent.style.display = 'block';
     }
-
-    // Event listeners untuk aksi massal
-    btnSetHadir.addEventListener('click', () => fillAllStatus('H'));
-    btnSetSakit.addEventListener('click', () => fillAllStatus('S'));
-    btnSetIzin.addEventListener('click', () => fillAllStatus('I'));
-    btnSetAlpha.addEventListener('click', () => fillAllStatus('A'));
-    btnSetTerlambat.addEventListener('click', () => fillAllStatus('T'));
-    btnResetAll.addEventListener('click', () => fillAllStatus(''));
-    btnApplyBulk.addEventListener('click', () => {
-        const status = bulkStatusSelect.value;
-        if (status === '') fillAllStatus('');
-        else if (status) fillAllStatus(status);
-    });
 
     loadBtn.addEventListener('click', loadAbsensi);
     saveAllBtn.addEventListener('click', saveCurrentHari);
