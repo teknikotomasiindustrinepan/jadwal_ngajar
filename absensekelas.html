@@ -750,4 +750,111 @@
             const stats = hitungStatistikPerSiswa(siswa.id, currentAbsensiData, totalPertemuan);
             let grade = '';
             const persen = parseFloat(stats.persentaseNilai);
-            if (persen >= 90) grade
+            if (persen >= 90) grade = 'A';
+            else if (persen >= 80) grade = 'B';
+            else if (persen >= 70) grade = 'C';
+            else if (persen >= 60) grade = 'D';
+            else grade = 'E';
+            
+            csvRows.push([
+                siswa.no,
+                siswa.nama,
+                stats.hadir,
+                stats.sakit,
+                stats.izin,
+                stats.alpha,
+                stats.terlambat,
+                totalPertemuan,
+                `${stats.totalNilai} / ${stats.nilaiMaksimal}`,
+                stats.persentaseNilai + '%',
+                grade
+            ]);
+        }
+        
+        // Total baris
+        const totalStats = { hadir: 0, sakit: 0, izin: 0, alpha: 0, terlambat: 0, totalNilai: 0, nilaiMaksimal: 0 };
+        for (const siswa of currentSiswaList) {
+            const stats = hitungStatistikPerSiswa(siswa.id, currentAbsensiData, totalPertemuan);
+            totalStats.hadir += stats.hadir;
+            totalStats.sakit += stats.sakit;
+            totalStats.izin += stats.izin;
+            totalStats.alpha += stats.alpha;
+            totalStats.terlambat += stats.terlambat;
+            totalStats.totalNilai += stats.totalNilai;
+            totalStats.nilaiMaksimal += stats.nilaiMaksimal;
+        }
+        const totalPersen = totalStats.nilaiMaksimal > 0 ? ((totalStats.totalNilai / totalStats.nilaiMaksimal) * 100).toFixed(1) : 0;
+        let totalGrade = '';
+        if (totalPersen >= 90) totalGrade = 'A';
+        else if (totalPersen >= 80) totalGrade = 'B';
+        else if (totalPersen >= 70) totalGrade = 'C';
+        else if (totalPersen >= 60) totalGrade = 'D';
+        else totalGrade = 'E';
+        
+        csvRows.push(['TOTAL', '', totalStats.hadir, totalStats.sakit, totalStats.izin, totalStats.alpha, totalStats.terlambat, totalStats.nilaiMaksimal / 10, `${totalStats.totalNilai} / ${totalStats.nilaiMaksimal}`, totalPersen + '%', totalGrade]);
+        
+        // Konversi ke CSV
+        const csvContent = csvRows.map(row => 
+            row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+        ).join('\n');
+        
+        const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `rekap_absensi_${currentData.kelasNama || 'kelas'}_minggu_${currentData.mingguAwal}_${currentData.mingguAkhir}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    // ==================== EVENT HANDLER ====================
+    tampilkanBtn.addEventListener('click', async () => {
+        const kelasId = kelasSelect.value;
+        const mapelKode = mapelSelect.value;
+        const mingguAwal = mingguAwalSelect.value;
+        const mingguAkhir = mingguAkhirSelect.value;
+
+        if (!kelasId) {
+            alert("Pilih kelas terlebih dahulu!");
+            return;
+        }
+        if (!mingguAwal || !mingguAkhir) {
+            alert("Pilih rentang minggu (awal dan akhir)!");
+            return;
+        }
+        if (parseInt(mingguAwal) > parseInt(mingguAkhir)) {
+            alert("Minggu awal tidak boleh lebih besar dari minggu akhir!");
+            return;
+        }
+
+        const kelas = daftarKelas.find(k => k.id === kelasId);
+        const mapel = daftarMapel.find(m => m.kode === mapelKode);
+        
+        currentData = {
+            kelasId: kelasId,
+            kelasNama: kelas ? kelas.nama : null,
+            mapelKode: mapelKode || null,
+            mapelNama: mapel ? mapel.nama : null,
+            mingguAwal: parseInt(mingguAwal),
+            mingguAkhir: parseInt(mingguAkhir)
+        };
+
+        await renderRekap();
+    });
+
+    exportExcelBtn.addEventListener('click', exportToExcel);
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+</script>
+</body>
+</html>
