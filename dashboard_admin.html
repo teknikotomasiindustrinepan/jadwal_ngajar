@@ -36,12 +36,16 @@
         .menu-card h3 { font-size: 1.2rem; color: #1a4a6f; margin-bottom: 8px; }
         .menu-card p { font-size: 0.8rem; color: #6c86a0; }
         .footer-note { text-align: center; margin-top: 40px; font-size: 0.7rem; color: #6c86a0; background: #f6fafd; padding: 12px; border-radius: 24px; }
-        .loading-screen { display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 1.2rem; color: #2c7a4d; }
+        .loading-screen { display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 1.2rem; color: #2c7a4d; flex-direction: column; gap: 16px; }
+        .error-message { color: #d9534f; background: #f8d7da; padding: 12px 24px; border-radius: 30px; font-size: 0.9rem; }
         @media (max-width: 700px) { .header { padding: 16px 20px; flex-direction: column; text-align: center; } .menu-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
-    <div id="loading" class="loading-screen"><i class="fas fa-spinner fa-spin"></i> Memeriksa akses...</div>
+    <div id="loading" class="loading-screen">
+        <i class="fas fa-spinner fa-spin fa-2x"></i>
+        <span>Memeriksa akses...</span>
+    </div>
 
     <div id="dashboardContent" style="display: none;">
         <div class="header">
@@ -93,27 +97,29 @@
         const dashboardDiv = document.getElementById('dashboardContent');
         const userEmailSpan = document.getElementById('userEmail');
 
-        // Fungsi untuk menentukan role user
+        // Fungsi sederhana untuk menentukan role
         async function getUserRole(user) {
             if (!user) return null;
-            // Cek apakah user login dengan email/password dan email admin tertentu
+            // Admin berdasarkan email
             if (user.email === "teknikotomasiindustri.nepan@gmail.com") {
                 return "admin";
             }
-            // Cek dari Firestore
-            try {
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                if (userDoc.exists()) {
-                    return userDoc.data().role;
-                }
-            } catch (e) {
-                console.error("Gagal baca role:", e);
-            }
-            // Jika login anonim, anggap sebagai guru
+            // User anonim dianggap guru
             if (user.isAnonymous) {
                 return "guru";
             }
-            return null;
+            // Cek dari Firestore untuk user email biasa
+            try {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    const role = userDoc.data().role;
+                    if (role === "guru" || role === "orangtua") return role;
+                }
+            } catch (e) {
+                console.warn("Gagal baca role dari Firestore:", e);
+            }
+            // Default: jika tidak dikenal, tetap izinkan sebagai guru (tapi nanti bisa logout jika perlu)
+            return "guru";
         }
 
         onAuthStateChanged(auth, async (user) => {
@@ -122,33 +128,48 @@
                 return;
             }
 
-            const role = await getUserRole(user);
-            
-            if (role === 'admin') {
-                // Admin tidak boleh di halaman guru, redirect ke dashboard admin
-                window.location.href = 'dashboard_admin.html';
-                return;
-            }
-            
-            if (role === 'guru' || user.isAnonymous) {
-                // Tampilkan dashboard guru
-                userEmailSpan.textContent = user.email || (user.isAnonymous ? 'Guru (Anonim)' : user.uid);
-                loadingDiv.style.display = 'none';
-                dashboardDiv.style.display = 'block';
-            } else {
-                // Role tidak dikenali, logout dan redirect ke login
-                await signOut(auth);
-                window.location.href = 'index.html';
+            try {
+                const role = await getUserRole(user);
+                console.log("Role terdeteksi:", role, "User:", user.email || user.uid);
+
+                if (role === 'admin') {
+                    window.location.href = 'dashboard_admin.html';
+                    return;
+                }
+                
+                if (role === 'guru' || role === 'orangtua' || user.isAnonymous) {
+                    // Tampilkan dashboard guru
+                    let displayName = user.email || (user.isAnonymous ? 'Guru (Anonim)' : user.uid);
+                    userEmailSpan.textContent = displayName;
+                    loadingDiv.style.display = 'none';
+                    dashboardDiv.style.display = 'block';
+                } else {
+                    // Role tidak valid, logout
+                    console.warn("Role tidak dikenal, logout");
+                    await signOut(auth);
+                    window.location.href = 'index.html';
+                }
+            } catch (err) {
+                console.error("Error saat pengecekan role:", err);
+                // Tampilkan error di loading screen
+                loadingDiv.innerHTML = `
+                    <i class="fas fa-exclamation-triangle fa-2x" style="color:#d9534f;"></i>
+                    <span class="error-message">Gagal memverifikasi akses. Periksa koneksi atau login ulang.</span>
+                    <button id="retryBtn" class="btn-logout" style="margin-top:16px;">Coba Lagi</button>
+                `;
+                document.getElementById('retryBtn')?.addEventListener('click', () => {
+                    window.location.reload();
+                });
             }
         });
 
         // Logout
-        document.getElementById('logoutBtn').addEventListener('click', async () => {
+        document.getElementById('logoutBtn')?.addEventListener('click', async () => {
             try {
                 await signOut(auth);
                 window.location.href = 'index.html';
             } catch (error) {
-                alert("Gagal logout.");
+                alert("Gagal logout: " + error.message);
             }
         });
 
