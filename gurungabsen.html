@@ -274,6 +274,33 @@
             flex-wrap: wrap;
             gap: 12px;
         }
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #f9fbfd;
+            border-radius: 20px;
+            align-items: center;
+        }
+        .action-buttons .btn-status {
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            width: auto;
+            border-radius: 30px;
+        }
+        .btn-hadir { background: #28a745; }
+        .btn-sakit { background: #ffc107; color: #856404; }
+        .btn-izin { background: #17a2b8; }
+        .btn-alpha { background: #dc3545; }
+        .btn-terlambat { background: #6f42c1; }
+        .btn-reset { background: #6c757d; }
+        .select-status {
+            width: auto;
+            padding: 6px 12px;
+            margin-left: 10px;
+        }
         @media (max-width: 700px) {
             body { padding: 15px; }
             .header { padding: 18px; }
@@ -281,6 +308,8 @@
             th, td { padding: 8px 6px; }
             .status-input { width: 55px; padding: 4px; font-size: 0.75rem; }
             .mapel-tab, .hari-tab { padding: 6px 12px; font-size: 0.75rem; }
+            .action-buttons { flex-direction: column; align-items: stretch; }
+            .action-buttons .btn-status { width: 100%; text-align: center; }
         }
     </style>
 </head>
@@ -334,6 +363,28 @@
             <div id="successMsg" class="success-msg"><i class="fas fa-check-circle"></i> Absensi berhasil disimpan!</div>
 
             <div class="card">
+                <!-- Tombol aksi massal -->
+                <div id="actionPanel" class="action-buttons" style="display: none;">
+                    <span style="font-weight: 600;"><i class="fas fa-tasks"></i> Aksi Cepat:</span>
+                    <button id="btnSetHadir" class="btn-status btn-hadir" style="background:#28a745;">✓ H (Hadir)</button>
+                    <button id="btnSetSakit" class="btn-status btn-sakit" style="background:#ffc107; color:#856404;">🤒 S (Sakit)</button>
+                    <button id="btnSetIzin" class="btn-status btn-izin" style="background:#17a2b8;">📝 I (Izin)</button>
+                    <button id="btnSetAlpha" class="btn-status btn-alpha" style="background:#dc3545;">✗ A (Alpha)</button>
+                    <button id="btnSetTerlambat" class="btn-status btn-terlambat" style="background:#6f42c1;">⏰ T (Terlambat)</button>
+                    <button id="btnResetAll" class="btn-status btn-reset" style="background:#6c757d;">🗑️ Reset Semua</button>
+                    <div style="flex:1"></div>
+                    <select id="bulkStatusSelect" style="width: auto; padding: 6px 12px;">
+                        <option value="">-- Pilih Status --</option>
+                        <option value="H">✓ Hadir (H)</option>
+                        <option value="S">🤒 Sakit (S)</option>
+                        <option value="I">📝 Izin (I)</option>
+                        <option value="A">✗ Alpha (A)</option>
+                        <option value="T">⏰ Terlambat (T)</option>
+                        <option value="">--- Kosongkan ---</option>
+                    </select>
+                    <button id="btnApplyBulk" class="btn-outline" style="width: auto; padding: 6px 16px;">Terapkan</button>
+                </div>
+
                 <div class="table-wrapper">
                     <table id="absensiTable">
                         <thead id="absensiHeader"></thead>
@@ -351,7 +402,7 @@
             </div>
         </div>
     </div>
-    <div class="footer-note"><i class="fas fa-clock"></i> Pilih hari terlebih dahulu untuk mengisi kehadiran.</div>
+    <div class="footer-note"><i class="fas fa-clock"></i> Pilih hari terlebih dahulu untuk mengisi kehadiran. Gunakan tombol aksi cepat untuk mengisi semua siswa sekaligus.</div>
 </div>
 
 <script type="module">
@@ -394,15 +445,27 @@
     const saveAllBtn = document.getElementById('saveAllBtn');
     const successMsg = document.getElementById('successMsg');
     const warningMessage = document.getElementById('warningMessage');
+    const actionPanel = document.getElementById('actionPanel');
+
+    // Tombol aksi massal
+    const btnSetHadir = document.getElementById('btnSetHadir');
+    const btnSetSakit = document.getElementById('btnSetSakit');
+    const btnSetIzin = document.getElementById('btnSetIzin');
+    const btnSetAlpha = document.getElementById('btnSetAlpha');
+    const btnSetTerlambat = document.getElementById('btnSetTerlambat');
+    const btnResetAll = document.getElementById('btnResetAll');
+    const bulkStatusSelect = document.getElementById('bulkStatusSelect');
+    const btnApplyBulk = document.getElementById('btnApplyBulk');
 
     let daftarGuru = [];
     let daftarMinggu = [];
     let currentGuru = null;
     let currentMinggu = null;
-    let allTeachingResults = []; // { kelas, mapel, slotsPerHari, siswaList }
+    let allTeachingResults = [];
     let activeMapelIndex = 0;
     let activeHari = null;
-    let absensiData = new Map(); // key: `${siswaId}_${hari}_${jp}`
+    let absensiData = new Map();
+    let currentMapelItem = null; // untuk referensi di fungsi massal
 
     const statusConfig = {
         'H': { label: 'Hadir', class: 'status-hadir', full: 'Hadir' },
@@ -556,15 +619,49 @@
         }
     }
 
+    // Fungsi untuk mengisi semua input dengan status tertentu
+    function fillAllStatus(status) {
+        if (!activeHari || !currentMapelItem) return;
+        const { slotsPerHari, siswaList } = currentMapelItem;
+        const jps = slotsPerHari[activeHari] || [];
+        if (jps.length === 0) return;
+        
+        for (let siswa of siswaList) {
+            for (let jp of jps) {
+                const key = `${siswa.id}_${activeHari}_${jp}`;
+                absensiData.set(key, status);
+                // Update tampilan input
+                const input = document.querySelector(`.status-input[data-siswa-id="${siswa.id}"][data-hari="${activeHari}"][data-jp="${jp}"]`);
+                if (input) {
+                    input.value = status;
+                    const statusClass = statusConfig[status]?.class || '';
+                    input.className = `status-input ${statusClass}`;
+                }
+            }
+        }
+        
+        const statusName = statusConfig[status]?.label || status || 'Kosong';
+        showSuccessMessage(`Semua diisi dengan status ${statusName}`, 1500);
+    }
+
+    function resetAllStatus() {
+        fillAllStatus('');
+    }
+
     function renderTableForHari(mapelItem, hari) {
+        currentMapelItem = mapelItem;
         const { kelas, mapel, slotsPerHari, siswaList } = mapelItem;
         const jps = slotsPerHari[hari] || [];
         if (siswaList.length === 0 || jps.length === 0) {
             absensiTbody.innerHTML = `<tr><td colspan="2" class="empty-state">Tidak ada siswa atau JP untuk hari ${hari}</td></tr>`;
             activeSiswaCount.textContent = siswaList.length;
+            actionPanel.style.display = 'none';
             return;
         }
-        let headerHtml = '<table><th>No</th><th>Nama Siswa</th>';
+        
+        actionPanel.style.display = 'flex';
+        
+        let headerHtml = '<tr><th>No</th><th>Nama Siswa</th>';
         for (let jp of jps) headerHtml += `<th class="slot-header">JP ${jp}</th>`;
         headerHtml += '</tr>';
         absensiHeader.innerHTML = headerHtml;
@@ -585,7 +682,7 @@
         absensiTbody.innerHTML = bodyHtml;
         activeSiswaCount.textContent = siswaList.length;
 
-        // Attach event listeners
+        // Attach event listeners untuk input individual
         document.querySelectorAll('.status-input').forEach(inp => {
             inp.addEventListener('input', (e) => {
                 let val = inp.value.trim().toUpperCase();
@@ -634,12 +731,16 @@
         if (!mapelItem) return;
         const { success, total } = await saveAbsensiForHari(mapelItem, activeHari);
         if (success > 0) {
-            successMsg.style.display = 'block';
-            setTimeout(() => successMsg.style.display = 'none', 3000);
-            alert(`Berhasil menyimpan ${success} dari ${total} absensi untuk hari ${activeHari}.`);
+            showSuccessMessage(`Berhasil menyimpan ${success} dari ${total} absensi untuk hari ${activeHari}.`);
         } else {
             alert("Tidak ada status yang diisi atau gagal menyimpan.");
         }
+    }
+
+    function showSuccessMessage(msg, duration = 3000) {
+        successMsg.textContent = msg;
+        successMsg.style.display = 'block';
+        setTimeout(() => successMsg.style.display = 'none', duration);
     }
 
     function renderMapelTabs() {
@@ -647,6 +748,7 @@
             mapelTabs.style.display = 'none';
             mapelHeaderInfo.style.display = 'none';
             hariTabs.style.display = 'none';
+            actionPanel.style.display = 'none';
             absensiTbody.innerHTML = '<tr><td colspan="2" class="empty-state">Tidak ada mapel yang diajar</td></tr>';
             return;
         }
@@ -661,7 +763,7 @@
                 const idx = parseInt(tab.dataset.mapelIdx);
                 if (idx !== activeMapelIndex) {
                     activeMapelIndex = idx;
-                    activeHari = null; // reset hari terpilih
+                    activeHari = null;
                     await switchToMapel(activeMapelIndex);
                 }
             });
@@ -678,10 +780,10 @@
         mapelHeaderInfo.style.display = 'flex';
         activeSiswaCount.textContent = siswaList.length;
 
-        // Buat tab hari
         const hariList = Object.keys(slotsPerHari);
         if (hariList.length === 0) {
             hariTabs.style.display = 'none';
+            actionPanel.style.display = 'none';
             absensiTbody.innerHTML = '<tr><td colspan="2" class="empty-state">Tidak ada hari mengajar untuk mapel ini</td></tr>';
             return;
         }
@@ -703,22 +805,19 @@
         hariTabs.innerHTML = hariHtml;
         hariTabs.style.display = 'flex';
 
-        // Bersihkan tabel dan absensiData untuk mapel baru (tidak langsung load hari)
         absensiHeader.innerHTML = '';
         absensiTbody.innerHTML = '<tr><td colspan="2" class="empty-state">Klik salah satu hari di atas untuk mulai mengisi kehadiran</td></tr>';
         activeHari = null;
         absensiData.clear();
+        actionPanel.style.display = 'none';
 
-        // Event listener untuk tab hari
         document.querySelectorAll('.hari-tab').forEach(tab => {
             tab.addEventListener('click', async (e) => {
                 const hr = tab.dataset.hari;
                 if (hr === activeHari) return;
                 activeHari = hr;
-                // Highlight aktif
                 document.querySelectorAll('.hari-tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
-                // Load data absensi untuk hari ini
                 await loadExistingAbsensiForMapelHari(mapelItem, activeHari);
                 renderTableForHari(mapelItem, activeHari);
             });
@@ -739,6 +838,7 @@
         mapelTabs.style.display = 'none';
         mapelHeaderInfo.style.display = 'none';
         hariTabs.style.display = 'none';
+        actionPanel.style.display = 'none';
 
         guruNamaInfo.textContent = currentGuru.nama;
         mingguInfo.textContent = `Minggu ${currentMinggu.mingguKe} (${currentMinggu.tanggalMulai} - ${currentMinggu.tanggalAkhir})`;
@@ -771,6 +871,22 @@
         loadingState.style.display = 'none';
         mainContent.style.display = 'block';
     }
+
+    // Event listeners untuk aksi massal
+    btnSetHadir.addEventListener('click', () => fillAllStatus('H'));
+    btnSetSakit.addEventListener('click', () => fillAllStatus('S'));
+    btnSetIzin.addEventListener('click', () => fillAllStatus('I'));
+    btnSetAlpha.addEventListener('click', () => fillAllStatus('A'));
+    btnSetTerlambat.addEventListener('click', () => fillAllStatus('T'));
+    btnResetAll.addEventListener('click', () => fillAllStatus(''));
+    btnApplyBulk.addEventListener('click', () => {
+        const status = bulkStatusSelect.value;
+        if (status === '') {
+            fillAllStatus('');
+        } else if (status) {
+            fillAllStatus(status);
+        }
+    });
 
     loadBtn.addEventListener('click', loadAbsensi);
     saveAllBtn.addEventListener('click', saveCurrentHari);
