@@ -15,7 +15,7 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a4a6f, #2c7a4d);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -44,8 +44,8 @@
 
         .logo i {
             font-size: 48px;
-            color: #4f46e5;
-            background: #eef2ff;
+            color: #2c7a4d;
+            background: #eef2f8;
             padding: 16px;
             border-radius: 60px;
         }
@@ -103,14 +103,14 @@
         }
 
         .input-group:focus-within {
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+            border-color: #2c7a4d;
+            box-shadow: 0 0 0 3px rgba(44,122,77,0.1);
             background: white;
         }
 
         button {
             width: 100%;
-            background: #4f46e5;
+            background: #2c7a4d;
             color: white;
             border: none;
             padding: 14px;
@@ -127,7 +127,7 @@
         }
 
         button:hover {
-            background: #4338ca;
+            background: #1e5e3a;
             transform: translateY(-1px);
         }
 
@@ -143,7 +143,7 @@
         }
 
         .register-link a {
-            color: #4f46e5;
+            color: #2c7a4d;
             text-decoration: none;
             font-weight: 500;
         }
@@ -168,7 +168,7 @@
             text-align: center;
             margin-top: 16px;
             font-size: 13px;
-            color: #4f46e5;
+            color: #2c7a4d;
         }
 
         .footer-note {
@@ -188,14 +188,14 @@
         <i class="fas fa-chalkboard-user"></i>
     </div>
     <h1>Absensi Teaching Factory</h1>
-    <div class="subtitle">Masuk ke sistem manajemen blok</div>
+    <div class="subtitle">Masuk ke sistem manajemen</div>
 
     <form id="loginForm">
         <div class="form-group">
             <label>Email</label>
             <div class="input-group">
                 <i class="fas fa-envelope"></i>
-                <input type="email" id="email" placeholder="contoh@sekolah.sch.id" required autocomplete="email">
+                <input type="email" id="email" placeholder="admin@sekolah.sch.id" required autocomplete="email">
             </div>
         </div>
         <div class="form-group">
@@ -224,20 +224,20 @@
     </div>
 </div>
 
-<!-- Firebase SDK -->
+<!-- Firebase SDK (menggunakan konfigurasi yang sama dengan file lainnya) -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Konfigurasi Firebase (terbaru)
+    // Konfigurasi Firebase yang konsisten dengan file lain (absensi-toi)
     const firebaseConfig = {
-        apiKey: "AIzaSyAH1Gu9biLuCopu_PNlm9pKMHB2PBsmHk0",
-        authDomain: "jadwal-toi-1aa56.firebaseapp.com",
-        projectId: "jadwal-toi-1aa56",
-        storageBucket: "jadwal-toi-1aa56.firebasestorage.app",
-        messagingSenderId: "230279522919",
-        appId: "1:230279522919:web:18012ddce6f920050082c2"
+        apiKey: "AIzaSyDKR4e_9uHBhBqQEdxR7s2R807fawb7J8Y",
+        authDomain: "absensi-toi.firebaseapp.com",
+        projectId: "absensi-toi",
+        storageBucket: "absensi-toi.firebasestorage.app",
+        messagingSenderId: "1069310497322",
+        appId: "1:1069310497322:web:2705d66e041c41a1626953"
     };
 
     // Initialize Firebase
@@ -273,23 +273,36 @@
 
     async function redirectUserByRole(user) {
         try {
+            // Cek dokumen user di koleksi "users" (bisa dibuat manual di Firestore)
             const userDocRef = doc(db, "users", user.uid);
             const userDoc = await getDoc(userDocRef);
             
+            let role = null;
             if (userDoc.exists()) {
-                const role = userDoc.data().role;
-                if (role === 'admin') {
-                    window.location.href = 'admin/dashboard.html';
-                } else if (role === 'guru') {
-                    window.location.href = 'guru/dashboard.html';
-                } else if (role === 'orangtua') {
-                    window.location.href = 'orangtua/dashboard.html';
-                } else {
-                    showError('Peran pengguna tidak valid. Hubungi administrator.');
-                    await auth.signOut();
-                }
+                role = userDoc.data().role;
             } else {
-                showError('Akun belum terdaftar di sistem. Hubungi administrator.');
+                // Fallback: jika tidak ada dokumen, coba cek email khusus untuk admin
+                // (untuk memudahkan, bisa juga dibuat otomatis)
+                if (user.email === "teknikotomasiindustri.nepan@gmail.com") {
+                    role = "admin";
+                } else {
+                    // Jika bukan admin dan tidak ada role, tolak akses
+                    showError('Akun belum terdaftar di sistem. Hubungi administrator.');
+                    await auth.signOut();
+                    return;
+                }
+            }
+
+            // Arahkan berdasarkan role
+            if (role === 'admin') {
+                window.location.href = 'dashboard_admin.html';
+            } else if (role === 'guru') {
+                // Jika ada halaman dashboard guru, arahkan ke sana. Sementara ke gurungabsen.html atau halaman guru
+                window.location.href = 'gurungabsen.html'; // bisa diubah ke dashboard_guru.html nanti
+            } else if (role === 'orangtua') {
+                window.location.href = 'orangtua/dashboard.html';
+            } else {
+                showError('Peran pengguna tidak valid. Hubungi administrator.');
                 await auth.signOut();
             }
         } catch (error) {
