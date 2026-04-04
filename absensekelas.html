@@ -125,7 +125,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 0.85rem;
-            min-width: 600px;
+            min-width: 800px;
         }
         th {
             background: #eef4fa;
@@ -148,6 +148,15 @@
         .status-alpha { background-color: #f8d7da; color: #721c24; border-radius: 20px; padding: 4px 10px; display: inline-block; font-size: 0.75rem; font-weight: 600; }
         .status-terlambat { background-color: #e2d5f1; color: #5e2a84; border-radius: 20px; padding: 4px 10px; display: inline-block; font-size: 0.75rem; font-weight: 600; }
         .status-none { background-color: #e9ecef; color: #6c757d; border-radius: 20px; padding: 4px 10px; display: inline-block; font-size: 0.75rem; font-weight: 600; }
+        .nilai-badge {
+            background-color: #1a4a6f;
+            color: white;
+            border-radius: 20px;
+            padding: 4px 10px;
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
         .loading {
             text-align: center;
             padding: 40px;
@@ -187,6 +196,18 @@
             gap: 12px;
             margin-top: 16px;
             justify-content: flex-end;
+        }
+        .score-table {
+            margin-top: 16px;
+            background: #f9fbfd;
+            border-radius: 16px;
+            padding: 12px;
+            font-size: 0.75rem;
+        }
+        .score-table span {
+            display: inline-block;
+            margin-right: 16px;
+            margin-bottom: 4px;
         }
         @media (max-width: 700px) {
             body { padding: 15px; }
@@ -277,6 +298,17 @@
             </div>
 
             <div class="card">
+                <!-- Tabel Bobot Nilai -->
+                <div class="score-table">
+                    <strong><i class="fas fa-calculator"></i> Bobot Nilai per Status:</strong><br>
+                    <span class="status-hadir">Hadir (H) = 10</span>
+                    <span class="status-sakit">Sakit (S) = 3</span>
+                    <span class="status-izin">Izin (I) = 3</span>
+                    <span class="status-alpha">Alpha (A) = 0</span>
+                    <span class="status-terlambat">Terlambat (T) = 7</span>
+                    <span><i class="fas fa-info-circle"></i> Nilai Akhir = (Total Nilai / (Total Pertemuan × 10)) × 100</span>
+                </div>
+
                 <div class="table-wrapper">
                     <table id="rekapTable">
                         <thead id="tableHeader"></thead>
@@ -289,19 +321,19 @@
                     <button id="exportExcelBtn" class="btn-outline"><i class="fas fa-file-excel"></i> Ekspor Excel (CSV)</button>
                 </div>
                 <div class="legend">
-                    <div class="legend-item"><span class="status-hadir">Hadir</span> <span>H</span></div>
-                    <div class="legend-item"><span class="status-izin">Izin</span> <span>I</span></div>
-                    <div class="legend-item"><span class="status-sakit">Sakit</span> <span>S</span></div>
-                    <div class="legend-item"><span class="status-alpha">Alpha</span> <span>A</span></div>
-                    <div class="legend-item"><span class="status-terlambat">Terlambat</span> <span>T</span></div>
-                    <div class="legend-item"><span class="status-none">Belum Diisi</span> <span>-</span></div>
+                    <div class="legend-item"><span class="status-hadir">Hadir</span> <span>H (10)</span></div>
+                    <div class="legend-item"><span class="status-izin">Izin</span> <span>I (3)</span></div>
+                    <div class="legend-item"><span class="status-sakit">Sakit</span> <span>S (3)</span></div>
+                    <div class="legend-item"><span class="status-alpha">Alpha</span> <span>A (0)</span></div>
+                    <div class="legend-item"><span class="status-terlambat">Terlambat</span> <span>T (7)</span></div>
+                    <div class="legend-item"><span class="status-none">Belum Diisi</span> <span>- (0)</span></div>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="footer-note">
-        <i class="fas fa-info-circle"></i> Rekap absensi berdasarkan data yang telah diinput oleh guru. Admin dapat melihat rekap per kelas dan per minggu.
+        <i class="fas fa-info-circle"></i> Rekap absensi berdasarkan data yang telah diinput oleh guru. Nilai akhir dihitung dengan bobot: H=10, S=3, I=3, A=0, T=7.
     </div>
 </div>
 
@@ -340,6 +372,16 @@
     const tableBody = document.getElementById('tableBody');
     const exportExcelBtn = document.getElementById('exportExcelBtn');
 
+    // Bobot nilai per status
+    const BOBOT_NILAI = {
+        'H': 10,  // Hadir
+        'S': 3,   // Sakit
+        'I': 3,   // Izin
+        'A': 0,   // Alpha
+        'T': 7,   // Terlambat
+        '': 0     // Belum diisi
+    };
+
     // Data global
     let daftarKelas = [];
     let daftarMinggu = [];
@@ -355,14 +397,14 @@
     let currentSiswaList = [];
     let currentAbsensiData = [];
 
-    // Status config
+    // Status config untuk tampilan
     const statusConfig = {
-        'H': { label: 'Hadir', class: 'status-hadir', full: 'Hadir' },
-        'I': { label: 'Izin', class: 'status-izin', full: 'Izin' },
-        'S': { label: 'Sakit', class: 'status-sakit', full: 'Sakit' },
-        'A': { label: 'Alpha', class: 'status-alpha', full: 'Alpha' },
-        'T': { label: 'Terlambat', class: 'status-terlambat', full: 'Terlambat' },
-        '': { label: 'Belum Diisi', class: 'status-none', full: '-' }
+        'H': { label: 'Hadir', class: 'status-hadir', full: 'Hadir', nilai: 10 },
+        'S': { label: 'Sakit', class: 'status-sakit', full: 'Sakit', nilai: 3 },
+        'I': { label: 'Izin', class: 'status-izin', full: 'Izin', nilai: 3 },
+        'A': { label: 'Alpha', class: 'status-alpha', full: 'Alpha', nilai: 0 },
+        'T': { label: 'Terlambat', class: 'status-terlambat', full: 'Terlambat', nilai: 7 },
+        '': { label: 'Belum Diisi', class: 'status-none', full: '-', nilai: 0 }
     };
 
     // ==================== GUARD: HANYA ADMIN ====================
@@ -512,35 +554,48 @@
         return results;
     }
 
-    // ==================== HITUNG STATISTIK ====================
-    function hitungStatistikPerSiswa(siswaId, absensiList, mingguList) {
-        const stats = {
-            hadir: 0,
-            sakit: 0,
-            izin: 0,
-            alpha: 0,
-            terlambat: 0,
-            belum: 0,
-            total: 0
-        };
+    // ==================== HITUNG STATISTIK PER SISWA (dengan nilai bobot) ====================
+    function hitungStatistikPerSiswa(siswaId, absensiList, totalPertemuan) {
+        let hadir = 0, sakit = 0, izin = 0, alpha = 0, terlambat = 0, belum = 0;
+        let totalNilai = 0;
         
         const absensiSiswa = absensiList.filter(a => a.siswaId === siswaId);
         
-        // Hitung total slot yang seharusnya (minggu * hari per minggu * jp per hari)
-        // Untuk rekap sederhana, kita hitung per status
         absensiSiswa.forEach(a => {
+            const nilai = BOBOT_NILAI[a.status] || 0;
+            totalNilai += nilai;
+            
             switch(a.status) {
-                case 'H': stats.hadir++; break;
-                case 'S': stats.sakit++; break;
-                case 'I': stats.izin++; break;
-                case 'A': stats.alpha++; break;
-                case 'T': stats.terlambat++; break;
-                default: stats.belum++;
+                case 'H': hadir++; break;
+                case 'S': sakit++; break;
+                case 'I': izin++; break;
+                case 'A': alpha++; break;
+                case 'T': terlambat++; break;
+                default: belum++;
             }
-            stats.total++;
         });
         
-        return stats;
+        const totalTerisi = absensiSiswa.length;
+        // Nilai maksimal jika semua hadir = totalPertemuan * 10
+        const nilaiMaksimal = totalPertemuan * 10;
+        const persentaseNilai = nilaiMaksimal > 0 ? (totalNilai / nilaiMaksimal) * 100 : 0;
+        
+        return {
+            hadir, sakit, izin, alpha, terlambat, belum,
+            totalTerisi,
+            totalNilai,
+            nilaiMaksimal,
+            persentaseNilai: persentaseNilai.toFixed(1)
+        };
+    }
+
+    // ==================== HITUNG TOTAL PERTEMUAN (berdasarkan minggu) ====================
+    function hitungTotalPertemuan(mingguAwal, mingguAkhir) {
+        // Asumsikan setiap minggu memiliki 5 hari (Senin-Jumat) dan setiap hari memiliki beberapa JP
+        // Untuk perhitungan sederhana, kita hitung berdasarkan data absensi yang ada
+        // Atau bisa juga berdasarkan konfigurasi jadwal kelas
+        // Di sini kita hitung dari data absensi yang tersedia (unique kombinasi minggu, hari, jp)
+        return 0; // akan dihitung ulang di render
     }
 
     // ==================== RENDER REKAP ====================
@@ -568,32 +623,43 @@
             const absensiList = await getAbsensiForKelas(kelasId, mingguAwal, mingguAkhir, kodeMapel);
             currentAbsensiData = absensiList;
 
-            // Generate header minggu
+            // Hitung total pertemuan yang seharusnya (berdasarkan data absensi yang ada)
+            // Ambil unique kombinasi minggu, hari, jp dari absensi yang ada
+            const uniqueSlots = new Set();
+            absensiList.forEach(a => {
+                uniqueSlots.add(`${a.mingguKe}_${a.hari}_${a.jp}`);
+            });
+            const totalPertemuan = uniqueSlots.size;
+
+            // Generate header
             let headerHtml = '<tr>';
             headerHtml += '<th>No</th>';
             headerHtml += '<th>Nama Siswa</th>';
-            headerHtml += '<th>Hadir (H)</th>';
-            headerHtml += '<th>Sakit (S)</th>';
-            headerHtml += '<th>Izin (I)</th>';
-            headerHtml += '<th>Alpha (A)</th>';
-            headerHtml += '<th>Terlambat (T)</th>';
-            headerHtml += '<th>Total</th>';
-            headerHtml += '<th>% Kehadiran</th>';
+            headerHtml += '<th>H</th>';
+            headerHtml += '<th>S</th>';
+            headerHtml += '<th>I</th>';
+            headerHtml += '<th>A</th>';
+            headerHtml += '<th>T</th>';
+            headerHtml += '<th>Total<br>Pertemuan</th>';
+            headerHtml += '<th>Total<br>Nilai</th>';
+            headerHtml += '<th>Nilai<br>Akhir</th>';
+            headerHtml += '<th>Grade</th>';
             headerHtml += '</tr>';
             tableHeader.innerHTML = headerHtml;
 
             // Generate body
             let bodyHtml = '';
             for (const siswa of siswaList) {
-                const stats = hitungStatistikPerSiswa(siswa.id, absensiList, daftarMinggu);
-                const totalTerisi = stats.hadir + stats.sakit + stats.izin + stats.terlambat;
-                const persentase = stats.total > 0 ? ((stats.hadir / stats.total) * 100).toFixed(1) : 0;
+                const stats = hitungStatistikPerSiswa(siswa.id, absensiList, totalPertemuan);
                 
-                // Tentukan warna persentase
-                let persenClass = '';
-                if (persentase >= 80) persenClass = 'status-hadir';
-                else if (persentase >= 60) persenClass = 'status-terlambat';
-                else persenClass = 'status-alpha';
+                // Tentukan grade berdasarkan persentase
+                let grade = '', gradeClass = '';
+                const persen = parseFloat(stats.persentaseNilai);
+                if (persen >= 90) { grade = 'A'; gradeClass = 'status-hadir'; }
+                else if (persen >= 80) { grade = 'B'; gradeClass = 'status-hadir'; }
+                else if (persen >= 70) { grade = 'C'; gradeClass = 'status-terlambat'; }
+                else if (persen >= 60) { grade = 'D'; gradeClass = 'status-terlambat'; }
+                else { grade = 'E'; gradeClass = 'status-alpha'; }
                 
                 bodyHtml += `<tr>`;
                 bodyHtml += `<td>${siswa.no}</td>`;
@@ -603,25 +669,35 @@
                 bodyHtml += `<td style="text-align:center"><span class="status-izin">${stats.izin}</span></td>`;
                 bodyHtml += `<td style="text-align:center"><span class="status-alpha">${stats.alpha}</span></td>`;
                 bodyHtml += `<td style="text-align:center"><span class="status-terlambat">${stats.terlambat}</span></td>`;
-                bodyHtml += `<td style="text-align:center"><strong>${stats.total}</strong></td>`;
-                bodyHtml += `<td style="text-align:center"><span class="${persenClass}" style="padding:4px 12px;">${persentase}%</span></td>`;
-                bodyHtml += `</table>`;
+                bodyHtml += `<td style="text-align:center"><strong>${totalPertemuan}</strong></td>`;
+                bodyHtml += `<td style="text-align:center"><span class="nilai-badge">${stats.totalNilai}</span> / ${stats.nilaiMaksimal}</td>`;
+                bodyHtml += `<td style="text-align:center"><span class="${gradeClass}" style="padding:4px 12px;">${stats.persentaseNilai}%</span></td>`;
+                bodyHtml += `<td style="text-align:center"><span class="${gradeClass}" style="padding:4px 12px; font-weight:bold;">${grade}</span></td>`;
+                bodyHtml += `</tr>`;
             }
             
             // Tambahkan baris total keseluruhan
             const totalStats = {
-                hadir: 0, sakit: 0, izin: 0, alpha: 0, terlambat: 0, total: 0
+                hadir: 0, sakit: 0, izin: 0, alpha: 0, terlambat: 0,
+                totalNilai: 0, nilaiMaksimal: 0
             };
             for (const siswa of siswaList) {
-                const stats = hitungStatistikPerSiswa(siswa.id, absensiList, daftarMinggu);
+                const stats = hitungStatistikPerSiswa(siswa.id, absensiList, totalPertemuan);
                 totalStats.hadir += stats.hadir;
                 totalStats.sakit += stats.sakit;
                 totalStats.izin += stats.izin;
                 totalStats.alpha += stats.alpha;
                 totalStats.terlambat += stats.terlambat;
-                totalStats.total += stats.total;
+                totalStats.totalNilai += stats.totalNilai;
+                totalStats.nilaiMaksimal += stats.nilaiMaksimal;
             }
-            const totalPersen = totalStats.total > 0 ? ((totalStats.hadir / totalStats.total) * 100).toFixed(1) : 0;
+            const totalPersen = totalStats.nilaiMaksimal > 0 ? ((totalStats.totalNilai / totalStats.nilaiMaksimal) * 100).toFixed(1) : 0;
+            let totalGrade = '';
+            if (totalPersen >= 90) totalGrade = 'A';
+            else if (totalPersen >= 80) totalGrade = 'B';
+            else if (totalPersen >= 70) totalGrade = 'C';
+            else if (totalPersen >= 60) totalGrade = 'D';
+            else totalGrade = 'E';
             
             bodyHtml += `<tr style="background-color:#eef4fa; font-weight:bold;">
                 <td colspan="2">TOTAL</td>
@@ -630,8 +706,10 @@
                 <td style="text-align:center">${totalStats.izin}</td>
                 <td style="text-align:center">${totalStats.alpha}</td>
                 <td style="text-align:center">${totalStats.terlambat}</td>
-                <td style="text-align:center">${totalStats.total}</td>
+                <td style="text-align:center">${totalStats.nilaiMaksimal / 10}</td>
+                <td style="text-align:center">${totalStats.totalNilai} / ${totalStats.nilaiMaksimal}</td>
                 <td style="text-align:center">${totalPersen}%</td>
+                <td style="text-align:center">${totalGrade}</td>
             </tr>`;
             
             tableBody.innerHTML = bodyHtml;
@@ -641,8 +719,6 @@
             kelasNamaInfo.textContent = kelas ? kelas.nama : kelasId;
             const mapel = daftarMapel.find(m => m.kode === kodeMapel);
             mapelInfo.textContent = mapel ? `${mapel.kode} - ${mapel.nama}` : (kodeMapel || 'Semua Mapel');
-            const mingguAwalData = daftarMinggu.find(m => m.mingguKe === mingguAwal);
-            const mingguAkhirData = daftarMinggu.find(m => m.mingguKe === mingguAkhir);
             mingguRangeInfo.textContent = `Minggu ${mingguAwal} - ${mingguAkhir}`;
 
         } catch (error) {
@@ -658,104 +734,20 @@
             return;
         }
         
+        // Hitung total pertemuan
+        const uniqueSlots = new Set();
+        currentAbsensiData.forEach(a => {
+            uniqueSlots.add(`${a.mingguKe}_${a.hari}_${a.jp}`);
+        });
+        const totalPertemuan = uniqueSlots.size;
+        
         let csvRows = [];
         // Header
-        csvRows.push(['No', 'Nama Siswa', 'Hadir (H)', 'Sakit (S)', 'Izin (I)', 'Alpha (A)', 'Terlambat (T)', 'Total', '% Kehadiran']);
+        csvRows.push(['No', 'Nama Siswa', 'H', 'S', 'I', 'A', 'T', 'Total Pertemuan', 'Total Nilai', 'Nilai Akhir (%)', 'Grade']);
         
         // Data siswa
         for (const siswa of currentSiswaList) {
-            const stats = hitungStatistikPerSiswa(siswa.id, currentAbsensiData, daftarMinggu);
-            const totalTerisi = stats.hadir + stats.sakit + stats.izin + stats.terlambat;
-            const persentase = stats.total > 0 ? ((stats.hadir / stats.total) * 100).toFixed(1) : 0;
-            csvRows.push([
-                siswa.no,
-                siswa.nama,
-                stats.hadir,
-                stats.sakit,
-                stats.izin,
-                stats.alpha,
-                stats.terlambat,
-                stats.total,
-                persentase + '%'
-            ]);
-        }
-        
-        // Total baris
-        const totalStats = { hadir: 0, sakit: 0, izin: 0, alpha: 0, terlambat: 0, total: 0 };
-        for (const siswa of currentSiswaList) {
-            const stats = hitungStatistikPerSiswa(siswa.id, currentAbsensiData, daftarMinggu);
-            totalStats.hadir += stats.hadir;
-            totalStats.sakit += stats.sakit;
-            totalStats.izin += stats.izin;
-            totalStats.alpha += stats.alpha;
-            totalStats.terlambat += stats.terlambat;
-            totalStats.total += stats.total;
-        }
-        const totalPersen = totalStats.total > 0 ? ((totalStats.hadir / totalStats.total) * 100).toFixed(1) : 0;
-        csvRows.push(['TOTAL', '', totalStats.hadir, totalStats.sakit, totalStats.izin, totalStats.alpha, totalStats.terlambat, totalStats.total, totalPersen + '%']);
-        
-        // Konversi ke CSV
-        const csvContent = csvRows.map(row => 
-            row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
-        ).join('\n');
-        
-        const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.download = `rekap_absensi_${currentData.kelasNama || 'kelas'}_minggu_${currentData.mingguAwal}_${currentData.mingguAkhir}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    }
-
-    // ==================== EVENT HANDLER ====================
-    tampilkanBtn.addEventListener('click', async () => {
-        const kelasId = kelasSelect.value;
-        const mapelKode = mapelSelect.value;
-        const mingguAwal = mingguAwalSelect.value;
-        const mingguAkhir = mingguAkhirSelect.value;
-
-        if (!kelasId) {
-            alert("Pilih kelas terlebih dahulu!");
-            return;
-        }
-        if (!mingguAwal || !mingguAkhir) {
-            alert("Pilih rentang minggu (awal dan akhir)!");
-            return;
-        }
-        if (parseInt(mingguAwal) > parseInt(mingguAkhir)) {
-            alert("Minggu awal tidak boleh lebih besar dari minggu akhir!");
-            return;
-        }
-
-        const kelas = daftarKelas.find(k => k.id === kelasId);
-        const mapel = daftarMapel.find(m => m.kode === mapelKode);
-        
-        currentData = {
-            kelasId: kelasId,
-            kelasNama: kelas ? kelas.nama : null,
-            mapelKode: mapelKode || null,
-            mapelNama: mapel ? mapel.nama : null,
-            mingguAwal: parseInt(mingguAwal),
-            mingguAkhir: parseInt(mingguAkhir)
-        };
-
-        await renderRekap();
-    });
-
-    exportExcelBtn.addEventListener('click', exportToExcel);
-
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
-</script>
-</body>
-</html>
+            const stats = hitungStatistikPerSiswa(siswa.id, currentAbsensiData, totalPertemuan);
+            let grade = '';
+            const persen = parseFloat(stats.persentaseNilai);
+            if (persen >= 90) grade
