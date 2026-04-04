@@ -324,8 +324,8 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDKR4e_9uHBhBqQEdxR7s2R807fawb7J8Y",
@@ -336,10 +336,14 @@
         appId: "1:1069310497322:web:2705d66e041c41a1626953"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
+onAuthStateChanged(auth, (user) => {
+    if (!user || user.email !== "teknikotomasiindustri.nepan@gmail.com") {
+        window.location.href = 'index.html';
+    }
+});
     const namaGuruInput = document.getElementById('namaGuruInput');
     const tambahGuruBtn = document.getElementById('tambahGuruBtn');
     const guruTbody = document.getElementById('guruTbody');
