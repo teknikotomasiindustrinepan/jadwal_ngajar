@@ -120,7 +120,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 12px;
-            margin-bottom: 24px;
+            margin-bottom: 16px;
             border-bottom: 2px solid #e2edf2;
             padding-bottom: 12px;
         }
@@ -152,6 +152,32 @@
         .mapel-tab.active .badge-count {
             background: rgba(255,255,255,0.3);
         }
+        .hari-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: #f9fbfd;
+            padding: 12px 16px;
+            border-radius: 40px;
+        }
+        .hari-tab {
+            background: #e9ecef;
+            padding: 8px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: 0.2s;
+            text-align: center;
+        }
+        .hari-tab:hover {
+            background: #dee2e6;
+        }
+        .hari-tab.active {
+            background: #2c7a4d;
+            color: white;
+        }
         .table-wrapper {
             overflow-x: auto;
         }
@@ -159,6 +185,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 0.85rem;
+            min-width: 400px;
         }
         th {
             background: #eef4fa;
@@ -174,12 +201,12 @@
             vertical-align: middle;
         }
         .status-input {
-            width: 80px;
-            padding: 8px 10px;
+            width: 70px;
+            padding: 6px 8px;
             border-radius: 24px;
             border: 1px solid #cbdde6;
             background: white;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             text-align: center;
             font-weight: 600;
             text-transform: uppercase;
@@ -252,19 +279,16 @@
             .header { padding: 18px; }
             .form-row { flex-direction: column; }
             th, td { padding: 8px 6px; }
-            .status-input { width: 60px; padding: 6px; font-size: 0.8rem; }
-            .mapel-tab { padding: 6px 12px; font-size: 0.75rem; }
+            .status-input { width: 55px; padding: 4px; font-size: 0.75rem; }
+            .mapel-tab, .hari-tab { padding: 6px 12px; font-size: 0.75rem; }
         }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1>
-            <i class="fas fa-clipboard-list"></i>
-            Absensi Teaching Factory
-        </h1>
-        <div><i class="fas fa-chalkboard-user"></i> Sistem Absensi Per Guru (Berdasarkan Kode Mapel)</div>
+        <h1><i class="fas fa-clipboard-list"></i> Absensi Teaching Factory</h1>
+        <div><i class="fas fa-chalkboard-user"></i> Sistem Absensi Per Guru (Per Hari & JP)</div>
     </div>
 
     <div id="loadingState" class="loading">
@@ -272,20 +296,15 @@
     </div>
 
     <div id="mainContent" style="display: none;">
-        <!-- Pilih Guru & Minggu -->
         <div class="card">
             <div class="form-row">
                 <div class="form-group">
                     <label><i class="fas fa-user-tie"></i> Pilih Guru</label>
-                    <select id="guruSelect">
-                        <option value="">-- Pilih Guru --</option>
-                    </select>
+                    <select id="guruSelect"><option value="">-- Pilih Guru --</option></select>
                 </div>
                 <div class="form-group">
                     <label><i class="fas fa-calendar-week"></i> Pilih Minggu</label>
-                    <select id="mingguSelect">
-                        <option value="">-- Pilih Minggu --</option>
-                    </select>
+                    <select id="mingguSelect"><option value="">-- Pilih Minggu --</option></select>
                 </div>
                 <div class="form-group">
                     <button id="loadBtn"><i class="fas fa-search"></i> Tampilkan Absensi</button>
@@ -293,38 +312,16 @@
             </div>
         </div>
 
-        <!-- Info & Tabel Absensi -->
         <div id="absensiPanel" style="display: none;">
             <div class="info-bar">
-                <div class="info-bar-item">
-                    <i class="fas fa-user"></i>
-                    <div>
-                        <div style="font-size: 0.7rem; color: #6c86a0;">Guru</div>
-                        <div><strong id="guruNamaInfo">-</strong></div>
-                    </div>
-                </div>
-                <div class="info-bar-item">
-                    <i class="fas fa-calendar-week"></i>
-                    <div>
-                        <div style="font-size: 0.7rem; color: #6c86a0;">Minggu</div>
-                        <div><strong id="mingguInfo">-</strong></div>
-                    </div>
-                </div>
-                <div class="info-bar-item">
-                    <i class="fas fa-chalkboard"></i>
-                    <div>
-                        <div style="font-size: 0.7rem; color: #6c86a0;">Total Mapel Diajar</div>
-                        <div><strong id="totalMapelInfo">0</strong></div>
-                    </div>
-                </div>
+                <div class="info-bar-item"><i class="fas fa-user"></i><div><div style="font-size:0.7rem;">Guru</div><strong id="guruNamaInfo">-</strong></div></div>
+                <div class="info-bar-item"><i class="fas fa-calendar-week"></i><div><div style="font-size:0.7rem;">Minggu</div><strong id="mingguInfo">-</strong></div></div>
+                <div class="info-bar-item"><i class="fas fa-chalkboard"></i><div><div style="font-size:0.7rem;">Mapel Diajar</div><strong id="totalMapelInfo">0</strong></div></div>
             </div>
 
             <div id="warningMessage" class="warning-state" style="display: none;"></div>
 
-            <!-- Tabs untuk mapel (hanya menampilkan kode mapel) -->
             <div id="mapelTabs" class="mapel-tabs" style="display: none;"></div>
-
-            <!-- Header mapel aktif -->
             <div id="mapelHeaderInfo" class="mapel-header-info" style="display: none;">
                 <span><i class="fas fa-code"></i> <strong id="activeMapelKode">-</strong></span>
                 <span><i class="fas fa-book-open"></i> <strong id="activeMapelNama">-</strong></span>
@@ -332,27 +329,21 @@
                 <span><i class="fas fa-users"></i> Siswa: <strong id="activeSiswaCount">0</strong></span>
             </div>
 
-            <div id="successMsg" class="success-msg">
-                <i class="fas fa-check-circle"></i> Absensi berhasil disimpan!
-            </div>
+            <div id="hariTabs" class="hari-tabs" style="display: none;"></div>
+
+            <div id="successMsg" class="success-msg"><i class="fas fa-check-circle"></i> Absensi berhasil disimpan!</div>
 
             <div class="card">
                 <div class="table-wrapper">
                     <table id="absensiTable">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>Nama Siswa</th>
-                                <th>Status (H/I/S/A/T)</th>
-                                <th>Aksi</th>
-                            </thead>
+                        <thead id="absensiHeader"></thead>
                         <tbody id="absensiTbody">
-                            的人<td colspan="4" class="empty-state">Pilih guru dan minggu untuk menampilkan absensi</td>
+                            <tr><td colspan="2" class="empty-state">Pilih guru dan minggu, lalu klik hari untuk mengisi kehadiran</td></tr>
                         </tbody>
                     </table>
                 </div>
-                <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 12px;">
-                    <button id="saveAllBtn" class="btn-save"><i class="fas fa-save"></i> Simpan Semua</button>
+                <div style="margin-top:20px; display:flex; justify-content:flex-end;">
+                    <button id="saveAllBtn" class="btn-save"><i class="fas fa-save"></i> Simpan Semua (Hari Ini)</button>
                 </div>
                 <div class="keterangan-info">
                     <i class="fas fa-info-circle"></i> Kode Status: <strong>H</strong> = Hadir, <strong>I</strong> = Izin, <strong>S</strong> = Sakit, <strong>A</strong> = Alpha, <strong>T</strong> = Terlambat
@@ -360,10 +351,7 @@
             </div>
         </div>
     </div>
-
-    <div class="footer-note">
-        <i class="fas fa-clock"></i> Absensi berdasarkan kode mapel yang terdaftar di sistem. Setiap mapel memiliki kode unik yang digunakan untuk mencocokkan jadwal.
-    </div>
+    <div class="footer-note"><i class="fas fa-clock"></i> Pilih hari terlebih dahulu untuk mengisi kehadiran.</div>
 </div>
 
 <script type="module">
@@ -384,7 +372,7 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
 
-    // DOM Elements
+    // DOM
     const loadingState = document.getElementById('loadingState');
     const mainContent = document.getElementById('mainContent');
     const guruSelect = document.getElementById('guruSelect');
@@ -400,19 +388,21 @@
     const activeMapelNama = document.getElementById('activeMapelNama');
     const activeKelasName = document.getElementById('activeKelasName');
     const activeSiswaCount = document.getElementById('activeSiswaCount');
+    const hariTabs = document.getElementById('hariTabs');
+    const absensiHeader = document.getElementById('absensiHeader');
     const absensiTbody = document.getElementById('absensiTbody');
     const saveAllBtn = document.getElementById('saveAllBtn');
     const successMsg = document.getElementById('successMsg');
     const warningMessage = document.getElementById('warningMessage');
 
-    // Data global
     let daftarGuru = [];
     let daftarMinggu = [];
     let currentGuru = null;
     let currentMinggu = null;
-    let allTeachingResults = []; // [{ kelas, mapel: {kode, nama}, siswa }]
-    let activeTabIndex = 0;
-    let absensiData = new Map(); // key: siswaId, value: status
+    let allTeachingResults = []; // { kelas, mapel, slotsPerHari, siswaList }
+    let activeMapelIndex = 0;
+    let activeHari = null;
+    let absensiData = new Map(); // key: `${siswaId}_${hari}_${jp}`
 
     const statusConfig = {
         'H': { label: 'Hadir', class: 'status-hadir', full: 'Hadir' },
@@ -423,7 +413,14 @@
         '': { label: '', class: '', full: '' }
     };
 
-    // ==================== LOAD GURU (dengan kode mapel) ====================
+    function generateKodeFromMapel(mapel) {
+        if (!mapel) return '';
+        const words = mapel.trim().split(/\s+/);
+        let initials = words.map(w => w.charAt(0).toUpperCase()).join('');
+        if (initials.length > 5) initials = initials.substring(0,5);
+        return initials;
+    }
+
     async function loadGuruList() {
         try {
             const guruSnapshot = await getDocs(collection(db, "guru"));
@@ -434,439 +431,355 @@
                     const mapelList = data.mapel.map(m => ({
                         kode: m.kode || generateKodeFromMapel(m.mapel),
                         nama: m.mapel,
-                        kelompok: m.kelompok || '-'
+                        kelompok: m.kelompok || m.mapel
                     }));
-                    daftarGuru.push({
-                        id: docSnap.id,
-                        nama: data.nama,
-                        mapelList: mapelList
-                    });
+                    daftarGuru.push({ id: docSnap.id, nama: data.nama, mapelList });
                 }
             });
-            daftarGuru.sort((a, b) => a.nama.localeCompare(b.nama, 'id'));
-
+            daftarGuru.sort((a,b) => a.nama.localeCompare(b.nama,'id'));
             guruSelect.innerHTML = '<option value="">-- Pilih Guru --</option>';
-            daftarGuru.forEach(guru => {
-                const option = document.createElement('option');
-                option.value = guru.id;
-                option.textContent = guru.nama;
-                guruSelect.appendChild(option);
+            daftarGuru.forEach(g => {
+                let opt = document.createElement('option');
+                opt.value = g.id;
+                opt.textContent = g.nama;
+                guruSelect.appendChild(opt);
             });
             return daftarGuru.length > 0;
-        } catch (error) {
-            console.error("Error loading guru:", error);
-            return false;
-        }
+        } catch(e) { console.error(e); return false; }
     }
 
-    // Helper: generate kode dari nama mapel (untuk fallback)
-    function generateKodeFromMapel(mapel) {
-        if (!mapel) return '';
-        const words = mapel.trim().split(/\s+/);
-        let initials = words.map(word => {
-            const firstChar = word.charAt(0);
-            return firstChar.toUpperCase();
-        }).join('');
-        if (initials.length > 5) initials = initials.substring(0, 5);
-        return initials;
-    }
-
-    // ==================== LOAD MINGGU ====================
     async function loadMingguList() {
         try {
             const mingguRef = doc(db, "pengaturanMinggu", "current");
-            const mingguSnap = await getDoc(mingguRef);
-            if (mingguSnap.exists()) {
-                daftarMinggu = mingguSnap.data().mingguList || [];
-                daftarMinggu.sort((a, b) => a.mingguKe - b.mingguKe);
-            } else {
-                daftarMinggu = [];
-            }
-
+            const snap = await getDoc(mingguRef);
+            daftarMinggu = snap.exists() ? snap.data().mingguList || [] : [];
+            daftarMinggu.sort((a,b) => a.mingguKe - b.mingguKe);
             mingguSelect.innerHTML = '<option value="">-- Pilih Minggu --</option>';
             daftarMinggu.forEach(m => {
-                const option = document.createElement('option');
-                option.value = m.mingguKe;
-                option.textContent = `Minggu ${m.mingguKe} (${m.tanggalMulai} - ${m.tanggalAkhir})`;
-                mingguSelect.appendChild(option);
+                let opt = document.createElement('option');
+                opt.value = m.mingguKe;
+                opt.textContent = `Minggu ${m.mingguKe} (${m.tanggalMulai} - ${m.tanggalAkhir})`;
+                mingguSelect.appendChild(opt);
             });
             return daftarMinggu.length > 0;
-        } catch (error) {
-            console.error("Error loading minggu:", error);
-            return false;
-        }
+        } catch(e) { console.error(e); return false; }
     }
 
-    // ==================== AMBIL SEMUA KELAS ====================
     async function getAllClasses() {
         const kelasSnapshot = await getDocs(collection(db, "kelas"));
         let kelasList = [];
-        kelasSnapshot.forEach(docSnap => {
-            kelasList.push({ id: docSnap.id, nama: docSnap.data().nama });
-        });
+        kelasSnapshot.forEach(d => kelasList.push({ id: d.id, nama: d.data().nama }));
         return kelasList;
     }
 
-    // ==================== AMBIL SISWA DENGAN MAPEL TERTENTU (berdasarkan kode mapel) ====================
-    async function getSiswaByMapel(kelasId, mingguKe, mapelKode) {
-        const siswaRef = collection(db, "kelas", kelasId, "siswa");
-        const siswaSnapshot = await getDocs(siswaRef);
-        const semuaSiswa = [];
-        siswaSnapshot.forEach(docSnap => {
-            semuaSiswa.push({
-                id: docSnap.id,
-                no: docSnap.data().no,
-                nama: docSnap.data().nama
-            });
-        });
-        semuaSiswa.sort((a, b) => a.no - b.no);
+    async function getSlotsByKelompok(kelasId, kelompok) {
+        const jadwalRef = doc(db, "jadwal", kelasId);
+        const snap = await getDoc(jadwalRef);
+        if (!snap.exists()) return {};
+        const schedule = snap.data().schedule || {};
+        const slotsPerHari = {};
+        const hariList = ["Senin","Selasa","Rabu","Kamis","Jumat"];
+        for (let hari of hariList) {
+            const day = schedule[hari];
+            if (day) {
+                let jps = [];
+                for (let jp=1; jp<=10; jp++) if (day[jp] === kelompok) jps.push(jp);
+                if (jps.length) slotsPerHari[hari] = jps;
+            }
+        }
+        return slotsPerHari;
+    }
 
-        const result = [];
-        for (const siswa of semuaSiswa) {
-            const jadwalSiswaRef = doc(db, "jadwalSiswa", siswa.id);
-            const jadwalSnap = await getDoc(jadwalSiswaRef);
+    async function getSiswaByMapelProduktif(kelasId, mingguKe, mapelKode) {
+        const siswaRef = collection(db, "kelas", kelasId, "siswa");
+        const snapshot = await getDocs(siswaRef);
+        let semua = [];
+        snapshot.forEach(d => semua.push({ id: d.id, no: d.data().no, nama: d.data().nama }));
+        semua.sort((a,b) => a.no - b.no);
+        let result = [];
+        for (let siswa of semua) {
+            const jadwalRef = doc(db, "jadwalSiswa", siswa.id);
+            const jadwalSnap = await getDoc(jadwalRef);
             if (jadwalSnap.exists()) {
                 const mingguData = jadwalSnap.data().minggu || {};
-                const mapelSiswa = mingguData[mingguKe];
-                // Mencocokkan berdasarkan KODE MAPEL (bukan nama lengkap)
-                if (mapelSiswa && mapelSiswa === mapelKode) {
-                    result.push(siswa);
-                }
+                if (mingguData[mingguKe] === mapelKode) result.push(siswa);
             }
         }
         return result;
     }
 
-    // ==================== CARI SEMUA JADWAL MENGAJAR GURU (berdasarkan kode mapel) ====================
+    async function getAllSiswaInKelas(kelasId) {
+        const siswaRef = collection(db, "kelas", kelasId, "siswa");
+        const snapshot = await getDocs(siswaRef);
+        let list = [];
+        snapshot.forEach(d => list.push({ id: d.id, no: d.data().no, nama: d.data().nama }));
+        list.sort((a,b) => a.no - b.no);
+        return list;
+    }
+
     async function findAllTeacherSchedules(guru, mingguKe) {
         const kelasList = await getAllClasses();
         const results = [];
-
-        for (const guruMapel of guru.mapelList) {
-            const mapelKode = guruMapel.kode;
-            const mapelNama = guruMapel.nama;
-            const mapelKelompok = guruMapel.kelompok;
-
-            for (const kelas of kelasList) {
-                const jadwalRef = doc(db, "jadwal", kelas.id);
-                const jadwalSnap = await getDoc(jadwalRef);
-                if (!jadwalSnap.exists()) continue;
-
-                const schedule = jadwalSnap.data().schedule || {};
-                let hasMapel = false;
-
-                // Cek apakah di jadwal kelas terdapat kelompok "Produktif TOI"
-                // (karena di jadwal kelas disimpan dalam bentuk kelompok mapel)
-                for (const hari of ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"]) {
-                    const daySchedule = schedule[hari];
-                    if (daySchedule) {
-                        for (let jp = 1; jp <= 10; jp++) {
-                            // Di jadwal kelas, yang tersimpan adalah NAMA KELOMPOK (misal: "Produktif TOI")
-                            const kelompokValue = daySchedule[jp];
-                            if (kelompokValue && kelompokValue === "Produktif TOI") {
-                                hasMapel = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (hasMapel) break;
+        for (let guruMapel of guru.mapelList) {
+            const { kode, nama, kelompok } = guruMapel;
+            if (!kelompok) continue;
+            for (let kelas of kelasList) {
+                const slotsPerHari = await getSlotsByKelompok(kelas.id, kelompok);
+                if (Object.keys(slotsPerHari).length === 0) continue;
+                let siswaList = [];
+                if (kelompok === "Produktif TOI") {
+                    siswaList = await getSiswaByMapelProduktif(kelas.id, mingguKe, kode);
+                } else {
+                    siswaList = await getAllSiswaInKelas(kelas.id);
                 }
-
-                if (hasMapel) {
-                    // Ambil siswa yang memiliki jadwal dengan kode mapel ini
-                    const siswaTerdaftar = await getSiswaByMapel(kelas.id, mingguKe, mapelKode);
-                    if (siswaTerdaftar.length > 0) {
-                        results.push({
-                            kelas: kelas,
-                            mapel: { kode: mapelKode, nama: mapelNama, kelompok: mapelKelompok },
-                            siswa: siswaTerdaftar
-                        });
-                    }
-                }
+                if (siswaList.length === 0) continue;
+                results.push({ kelas, mapel: { kode, nama, kelompok }, slotsPerHari, siswaList });
             }
         }
         return results;
     }
 
-    // ==================== LOAD ABSENSI YANG SUDAH TERSIMPAN ====================
-    async function loadExistingAbsensiForMapel(mapel, siswaList) {
+    async function loadExistingAbsensiForMapelHari(mapelItem, hari) {
         if (!currentMinggu) return;
-        absensiData.clear();
-        
-        for (const siswa of siswaList) {
-            const docId = `${siswa.id}_${currentMinggu.mingguKe}_${mapel.kode}`;
-            const absensiRef = doc(db, "absensi", docId);
-            const absensiSnap = await getDoc(absensiRef);
-            if (absensiSnap.exists()) {
-                absensiData.set(siswa.id, absensiSnap.data().status || '');
-            } else {
-                absensiData.set(siswa.id, '');
+        const { kelas, mapel, slotsPerHari, siswaList } = mapelItem;
+        const jps = slotsPerHari[hari] || [];
+        if (jps.length === 0) return;
+        for (let siswa of siswaList) {
+            for (let jp of jps) {
+                const docId = `${siswa.id}_${currentMinggu.mingguKe}_${hari}_${jp}_${mapel.kode}`;
+                const ref = doc(db, "absensi", docId);
+                const snap = await getDoc(ref);
+                const key = `${siswa.id}_${hari}_${jp}`;
+                if (snap.exists()) absensiData.set(key, snap.data().status || '');
+                else absensiData.set(key, '');
             }
         }
     }
 
-    // ==================== RENDER TABEL UNTUK MAPEL TERTENTU ====================
-    function renderTableForMapel(mapelItem) {
-        const siswaList = mapelItem.siswa;
-        
-        if (siswaList.length === 0) {
-            absensiTbody.innerHTML = '<tr><td colspan="4" class="empty-state">Tidak ada siswa yang mengikuti mapel ini pada minggu ini</td></tr>';
-            activeSiswaCount.textContent = '0';
+    function renderTableForHari(mapelItem, hari) {
+        const { kelas, mapel, slotsPerHari, siswaList } = mapelItem;
+        const jps = slotsPerHari[hari] || [];
+        if (siswaList.length === 0 || jps.length === 0) {
+            absensiTbody.innerHTML = `<tr><td colspan="2" class="empty-state">Tidak ada siswa atau JP untuk hari ${hari}</td></tr>`;
+            activeSiswaCount.textContent = siswaList.length;
             return;
         }
+        let headerHtml = '<table><th>No</th><th>Nama Siswa</th>';
+        for (let jp of jps) headerHtml += `<th class="slot-header">JP ${jp}</th>`;
+        headerHtml += '</tr>';
+        absensiHeader.innerHTML = headerHtml;
 
-        let html = '';
-        siswaList.forEach((siswa, idx) => {
-            const status = absensiData.get(siswa.id) || '';
-            const statusClass = statusConfig[status]?.class || '';
-            html += `
-                <tr data-siswa-id="${siswa.id}">
-                    <td>${idx + 1}</td>
-                    <td><strong>${escapeHtml(siswa.nama)}</strong></td>
-                    <td>
-                        <input type="text" class="status-input ${statusClass}" 
-                               data-siswa-id="${siswa.id}" 
-                               value="${status}"
-                               maxlength="1"
-                               placeholder="H/I/S/A/T"
-                               style="text-transform:uppercase;">
-                    </td>
-                    <td>
-                        <button class="save-single-btn" data-siswa-id="${siswa.id}" style="background:#5bc0de; padding:6px 16px; border-radius:24px; border:none; cursor:pointer;">💾 Simpan</button>
-                    </td>
-                </tr>
-            `;
-        });
-        absensiTbody.innerHTML = html;
+        let bodyHtml = '';
+        for (let siswa of siswaList) {
+            bodyHtml += `<tr data-siswa-id="${siswa.id}">`;
+            bodyHtml += `<td>${siswa.no}</td>`;
+            bodyHtml += `<td><strong>${escapeHtml(siswa.nama)}</strong></td>`;
+            for (let jp of jps) {
+                const key = `${siswa.id}_${hari}_${jp}`;
+                const status = absensiData.get(key) || '';
+                const statusClass = statusConfig[status]?.class || '';
+                bodyHtml += `<td style="text-align:center"><input type="text" class="status-input ${statusClass}" data-siswa-id="${siswa.id}" data-hari="${hari}" data-jp="${jp}" value="${status}" maxlength="1" placeholder="H/I/S/A/T" style="text-transform:uppercase;"></td>`;
+            }
+            bodyHtml += '</tr>';
+        }
+        absensiTbody.innerHTML = bodyHtml;
         activeSiswaCount.textContent = siswaList.length;
-        activeMapelKode.textContent = mapelItem.mapel.kode;
-        activeMapelNama.textContent = mapelItem.mapel.nama;
-        activeKelasName.textContent = mapelItem.kelas.nama;
 
-        // Event listeners
-        document.querySelectorAll('.status-input').forEach(input => {
-            input.addEventListener('input', (e) => {
-                let val = input.value.trim().toUpperCase();
-                if (val && !['H', 'I', 'S', 'A', 'T'].includes(val)) {
-                    input.value = '';
-                    return;
-                }
-                if (val) {
-                    const statusClass = statusConfig[val]?.class || '';
-                    input.className = `status-input ${statusClass}`;
-                } else {
-                    input.className = 'status-input';
-                }
-                const siswaId = input.getAttribute('data-siswa-id');
-                absensiData.set(siswaId, val);
-            });
-        });
-
-        document.querySelectorAll('.save-single-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const siswaId = btn.getAttribute('data-siswa-id');
-                await saveAbsensiSiswa(siswaId, mapelItem);
-                showSuccessMessage();
+        // Attach event listeners
+        document.querySelectorAll('.status-input').forEach(inp => {
+            inp.addEventListener('input', (e) => {
+                let val = inp.value.trim().toUpperCase();
+                if (val && !['H','I','S','A','T'].includes(val)) { inp.value = ''; return; }
+                if (val) inp.className = `status-input ${statusConfig[val]?.class || ''}`;
+                else inp.className = 'status-input';
+                const siswaId = inp.dataset.siswaId;
+                const hr = inp.dataset.hari;
+                const jp = inp.dataset.jp;
+                absensiData.set(`${siswaId}_${hr}_${jp}`, val);
             });
         });
     }
 
-    // ==================== SIMPAN ABSENSI ====================
-    async function saveAbsensiSiswa(siswaId, mapelItem) {
-        const status = absensiData.get(siswaId) || '';
-        if (!status) {
-            alert("Isi status terlebih dahulu (H/I/S/A/T)");
-            return false;
+    async function saveAbsensiForHari(mapelItem, hari) {
+        const { siswaList, slotsPerHari, mapel, kelas } = mapelItem;
+        const jps = slotsPerHari[hari] || [];
+        let success = 0, total = 0;
+        for (let siswa of siswaList) {
+            for (let jp of jps) {
+                total++;
+                const key = `${siswa.id}_${hari}_${jp}`;
+                const status = absensiData.get(key) || '';
+                if (!status) continue;
+                const docId = `${siswa.id}_${currentMinggu.mingguKe}_${hari}_${jp}_${mapel.kode}`;
+                const ref = doc(db, "absensi", docId);
+                try {
+                    await setDoc(ref, {
+                        siswaId: siswa.id, mingguKe: currentMinggu.mingguKe, hari, jp,
+                        kodeMapel: mapel.kode, namaMapel: mapel.nama, kelompokMapel: mapel.kelompok,
+                        kelasId: kelas.id, namaKelas: kelas.nama, status,
+                        statusFull: statusConfig[status]?.full || status,
+                        tanggalAbsen: new Date().toISOString(),
+                        guruId: currentGuru.id, guruNama: currentGuru.nama
+                    }, { merge: true });
+                    success++;
+                } catch(e) { console.error(e); }
+            }
         }
-        
-        const docId = `${siswaId}_${currentMinggu.mingguKe}_${mapelItem.mapel.kode}`;
-        const absensiRef = doc(db, "absensi", docId);
-        
-        try {
-            await setDoc(absensiRef, {
-                siswaId: siswaId,
-                mingguKe: currentMinggu.mingguKe,
-                kodeMapel: mapelItem.mapel.kode,
-                namaMapel: mapelItem.mapel.nama,
-                kelompokMapel: mapelItem.mapel.kelompok,
-                kelasId: mapelItem.kelas.id,
-                namaKelas: mapelItem.kelas.nama,
-                status: status,
-                statusFull: statusConfig[status]?.full || status,
-                tanggalAbsen: new Date().toISOString(),
-                guruId: currentGuru.id,
-                guruNama: currentGuru.nama
-            }, { merge: true });
-            return true;
-        } catch (error) {
-            console.error("Error saving absensi:", error);
-            alert("Gagal menyimpan absensi: " + error.message);
-            return false;
-        }
+        return { success, total };
     }
 
-    async function saveAllAbsensi() {
-        const activeItem = allTeachingResults[activeTabIndex];
-        if (!activeItem || activeItem.siswa.length === 0) {
-            alert("Tidak ada data siswa untuk disimpan.");
-            return;
-        }
-        
-        let successCount = 0;
-        for (const siswa of activeItem.siswa) {
-            const saved = await saveAbsensiSiswa(siswa.id, activeItem);
-            if (saved) successCount++;
-        }
-        
-        if (successCount > 0) {
-            showSuccessMessage();
-            alert(`Berhasil menyimpan ${successCount} dari ${activeItem.siswa.length} absensi.`);
+    async function saveCurrentHari() {
+        if (!activeHari) { alert("Pilih hari terlebih dahulu."); return; }
+        const mapelItem = allTeachingResults[activeMapelIndex];
+        if (!mapelItem) return;
+        const { success, total } = await saveAbsensiForHari(mapelItem, activeHari);
+        if (success > 0) {
+            successMsg.style.display = 'block';
+            setTimeout(() => successMsg.style.display = 'none', 3000);
+            alert(`Berhasil menyimpan ${success} dari ${total} absensi untuk hari ${activeHari}.`);
         } else {
-            alert("Gagal menyimpan absensi.");
+            alert("Tidak ada status yang diisi atau gagal menyimpan.");
         }
     }
 
-    function showSuccessMessage() {
-        successMsg.style.display = 'block';
-        setTimeout(() => {
-            successMsg.style.display = 'none';
-        }, 3000);
-    }
-
-    // ==================== RENDER MAPEL TABS (menampilkan kode mapel) ====================
     function renderMapelTabs() {
         if (allTeachingResults.length === 0) {
             mapelTabs.style.display = 'none';
             mapelHeaderInfo.style.display = 'none';
-            absensiTbody.innerHTML = '<tr><td colspan="4" class="empty-state">Tidak ada mapel yang diajar pada minggu ini</td></tr>';
+            hariTabs.style.display = 'none';
+            absensiTbody.innerHTML = '<tr><td colspan="2" class="empty-state">Tidak ada mapel yang diajar</td></tr>';
             return;
         }
-
         mapelTabs.style.display = 'flex';
-        mapelHeaderInfo.style.display = 'flex';
-        
-        let tabsHtml = '';
+        let html = '';
         allTeachingResults.forEach((item, idx) => {
-            const isActive = idx === activeTabIndex;
-            tabsHtml += `
-                <div class="mapel-tab ${isActive ? 'active' : ''}" data-tab-index="${idx}">
-                    ${item.mapel.kode}
-                    <span class="badge-count">${item.siswa.length}</span>
-                </div>
-            `;
+            html += `<div class="mapel-tab ${idx === activeMapelIndex ? 'active' : ''}" data-mapel-idx="${idx}">${item.mapel.kode}<span class="badge-count">${item.siswaList.length}</span></div>`;
         });
-        mapelTabs.innerHTML = tabsHtml;
-
-        // Event listeners untuk tabs
+        mapelTabs.innerHTML = html;
         document.querySelectorAll('.mapel-tab').forEach(tab => {
             tab.addEventListener('click', async (e) => {
-                const idx = parseInt(tab.getAttribute('data-tab-index'));
-                if (!isNaN(idx) && idx !== activeTabIndex) {
-                    activeTabIndex = idx;
-                    const selectedItem = allTeachingResults[activeTabIndex];
-                    await loadExistingAbsensiForMapel(selectedItem.mapel, selectedItem.siswa);
-                    renderTableForMapel(selectedItem);
-                    renderMapelTabs(); // re-render untuk update active class
+                const idx = parseInt(tab.dataset.mapelIdx);
+                if (idx !== activeMapelIndex) {
+                    activeMapelIndex = idx;
+                    activeHari = null; // reset hari terpilih
+                    await switchToMapel(activeMapelIndex);
                 }
             });
         });
     }
 
-    // ==================== LOAD DATA UTAMA ====================
+    async function switchToMapel(idx) {
+        const mapelItem = allTeachingResults[idx];
+        if (!mapelItem) return;
+        const { kelas, mapel, slotsPerHari, siswaList } = mapelItem;
+        activeMapelKode.textContent = mapel.kode;
+        activeMapelNama.textContent = mapel.nama;
+        activeKelasName.textContent = kelas.nama;
+        mapelHeaderInfo.style.display = 'flex';
+        activeSiswaCount.textContent = siswaList.length;
+
+        // Buat tab hari
+        const hariList = Object.keys(slotsPerHari);
+        if (hariList.length === 0) {
+            hariTabs.style.display = 'none';
+            absensiTbody.innerHTML = '<tr><td colspan="2" class="empty-state">Tidak ada hari mengajar untuk mapel ini</td></tr>';
+            return;
+        }
+        let hariHtml = '';
+        for (let hari of hariList) {
+            let tanggal = '';
+            if (currentMinggu && currentMinggu.tanggalMulai) {
+                const tglMulai = new Date(currentMinggu.tanggalMulai);
+                const hariIndex = { "Senin":0, "Selasa":1, "Rabu":2, "Kamis":3, "Jumat":4 };
+                const offset = hariIndex[hari];
+                if (offset !== undefined) {
+                    const tgl = new Date(tglMulai);
+                    tgl.setDate(tglMulai.getDate() + offset);
+                    tanggal = tgl.toLocaleDateString('id-ID');
+                }
+            }
+            hariHtml += `<div class="hari-tab" data-hari="${hari}">${hari}<br><small>${tanggal}</small></div>`;
+        }
+        hariTabs.innerHTML = hariHtml;
+        hariTabs.style.display = 'flex';
+
+        // Bersihkan tabel dan absensiData untuk mapel baru (tidak langsung load hari)
+        absensiHeader.innerHTML = '';
+        absensiTbody.innerHTML = '<tr><td colspan="2" class="empty-state">Klik salah satu hari di atas untuk mulai mengisi kehadiran</td></tr>';
+        activeHari = null;
+        absensiData.clear();
+
+        // Event listener untuk tab hari
+        document.querySelectorAll('.hari-tab').forEach(tab => {
+            tab.addEventListener('click', async (e) => {
+                const hr = tab.dataset.hari;
+                if (hr === activeHari) return;
+                activeHari = hr;
+                // Highlight aktif
+                document.querySelectorAll('.hari-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                // Load data absensi untuk hari ini
+                await loadExistingAbsensiForMapelHari(mapelItem, activeHari);
+                renderTableForHari(mapelItem, activeHari);
+            });
+        });
+    }
+
     async function loadAbsensi() {
         const guruId = guruSelect.value;
         const mingguKe = parseInt(mingguSelect.value);
-        
-        if (!guruId || !mingguKe) {
-            alert("Pilih guru dan minggu terlebih dahulu!");
-            return;
-        }
-
+        if (!guruId || !mingguKe) { alert("Pilih guru dan minggu!"); return; }
         currentGuru = daftarGuru.find(g => g.id === guruId);
         currentMinggu = daftarMinggu.find(m => m.mingguKe === mingguKe);
-        
         if (!currentGuru || !currentMinggu) return;
 
-        absensiTbody.innerHTML = '<tr><td colspan="4" class="loading"><i class="fas fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+        absensiTbody.innerHTML = '<tr><td colspan="2" class="loading"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>';
         absensiPanel.style.display = 'block';
         warningMessage.style.display = 'none';
         mapelTabs.style.display = 'none';
         mapelHeaderInfo.style.display = 'none';
+        hariTabs.style.display = 'none';
 
         guruNamaInfo.textContent = currentGuru.nama;
         mingguInfo.textContent = `Minggu ${currentMinggu.mingguKe} (${currentMinggu.tanggalMulai} - ${currentMinggu.tanggalAkhir})`;
 
         allTeachingResults = await findAllTeacherSchedules(currentGuru, mingguKe);
-        
         if (allTeachingResults.length === 0) {
             const guruMapelList = currentGuru.mapelList.map(m => `${m.kode} - ${m.nama}`).join(', ');
-            warningMessage.innerHTML = `
-                <i class="fas fa-exclamation-triangle"></i> 
-                <strong>Guru tidak mengajar pada minggu ini</strong><br><br>
-                Guru ini memiliki mapel: <strong>${guruMapelList}</strong><br>
-                Namun tidak ada jadwal yang cocok pada minggu ${mingguKe}.
-                <br><br>Pastikan:
-                <ul style="margin-top: 8px; text-align: left; display: inline-block;">
-                    <li>Mapel sudah ditambahkan ke jadwal kelas di halaman Jadwal (kelompok "Produktif TOI")</li>
-                    <li>Siswa sudah memiliki jadwal dengan KODE MAPEL yang sesuai di halaman Jadwal Siswa</li>
-                    <li>Kode mapel di jadwal siswa harus sama persis dengan kode mapel guru</li>
-                </ul>
-            `;
+            warningMessage.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Guru tidak mengajar pada minggu ini.<br>Mapel: ${guruMapelList}<br>Pastikan kelompok mapel sesuai dengan jadwal kelas.`;
             warningMessage.style.display = 'block';
             totalMapelInfo.textContent = '0';
-            absensiTbody.innerHTML = '<tr><td colspan="4" class="empty-state">Pilih kombinasi lain atau atur jadwal terlebih dahulu</td></tr>';
+            absensiTbody.innerHTML = '<tr><td colspan="2" class="empty-state">Tidak ada jadwal mengajar</td></tr>';
             return;
         }
 
         totalMapelInfo.textContent = allTeachingResults.length;
-        activeTabIndex = 0;
-        const firstItem = allTeachingResults[0];
-        await loadExistingAbsensiForMapel(firstItem.mapel, firstItem.siswa);
-        renderTableForMapel(firstItem);
+        activeMapelIndex = 0;
+        activeHari = null;
         renderMapelTabs();
+        await switchToMapel(0);
     }
 
     function escapeHtml(str) {
         if (!str) return '';
-        return str.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
+        return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
     }
 
-    // ==================== INIT ====================
     async function init() {
-        const hasGuru = await loadGuruList();
-        const hasMinggu = await loadMingguList();
-        
+        await loadGuruList();
+        await loadMingguList();
         loadingState.style.display = 'none';
         mainContent.style.display = 'block';
-        
-        if (!hasGuru) {
-            warningMessage.innerHTML = '⚠️ Belum ada data guru. Silakan tambahkan guru dan mapel di halaman Manajemen Guru terlebih dahulu.';
-            warningMessage.style.display = 'block';
-        }
-        if (!hasMinggu) {
-            warningMessage.innerHTML = '⚠️ Belum ada pengaturan minggu. Silakan atur minggu di halaman Pengaturan Minggu terlebih dahulu.';
-            warningMessage.style.display = 'block';
-        }
     }
 
     loadBtn.addEventListener('click', loadAbsensi);
-    saveAllBtn.addEventListener('click', saveAllAbsensi);
+    saveAllBtn.addEventListener('click', saveCurrentHari);
 
     onAuthStateChanged(auth, (user) => {
-        if (user) {
-            init();
-        } else {
-            loadingState.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Melakukan login anonim...';
-            signInAnonymously(auth).catch((error) => {
-                console.error("Gagal login anonim:", error);
-                loadingState.innerHTML = '❌ Gagal terhubung ke Firebase. Pastikan autentikasi anonim diaktifkan.';
-                loadingState.style.color = 'red';
-            });
+        if (user) init();
+        else {
+            loadingState.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Login anonim...';
+            signInAnonymously(auth).catch(err => loadingState.innerHTML = '❌ Gagal koneksi.');
         }
     });
 </script>
