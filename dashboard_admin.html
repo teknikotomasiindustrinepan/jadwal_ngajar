@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Dashboard Admin - Teknik Otomasi Industri</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #eef2f8;
+            min-height: 100vh;
+        }
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a4a6f, #2c7a4d);
+            color: white;
+            padding: 20px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .logo h1 {
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo i {
+            font-size: 1.8rem;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(255,255,255,0.15);
+            padding: 8px 20px;
+            border-radius: 40px;
+        }
+        .user-info i {
+            font-size: 1.2rem;
+        }
+        .btn-logout {
+            background: #d9534f;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 30px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-logout:hover {
+            background: #c9302c;
+            transform: translateY(-1px);
+        }
+        /* Container */
+        .container {
+            max-width: 1300px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        /* Welcome Card */
+        .welcome-card {
+            background: white;
+            border-radius: 28px;
+            padding: 24px 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-left: 6px solid #2c7a4d;
+        }
+        .welcome-card h2 {
+            color: #1a4a6f;
+            margin-bottom: 8px;
+        }
+        .welcome-card p {
+            color: #5a6e7c;
+        }
+        /* Grid Menu */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 16px;
+        }
+        .menu-card {
+            background: white;
+            border-radius: 24px;
+            padding: 24px 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            text-align: center;
+            border: 1px solid #e2edf2;
+        }
+        .menu-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+        }
+        .menu-icon {
+            font-size: 2.5rem;
+            color: #2c7a4d;
+            margin-bottom: 16px;
+        }
+        .menu-card h3 {
+            font-size: 1.2rem;
+            color: #1a4a6f;
+            margin-bottom: 8px;
+        }
+        .menu-card p {
+            font-size: 0.8rem;
+            color: #6c86a0;
+        }
+        .footer-note {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.7rem;
+            color: #6c86a0;
+            background: #f6fafd;
+            padding: 12px;
+            border-radius: 24px;
+        }
+        @media (max-width: 700px) {
+            .header { padding: 16px 20px; flex-direction: column; text-align: center; }
+            .menu-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <h1><i class="fas fa-chalkboard-user"></i> Teknik Otomasi Industri</h1>
+        </div>
+        <div class="user-info">
+            <i class="fas fa-user-shield"></i>
+            <span id="userEmail">Loading...</span>
+            <button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Keluar</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="welcome-card">
+            <h2><i class="fas fa-tachometer-alt"></i> Dashboard Admin</h2>
+            <p>Selamat datang, Administrator. Kelola seluruh data sistem absensi Teaching Factory di sini.</p>
+        </div>
+
+        <div class="menu-grid">
+            <!-- Manajemen Guru -->
+            <div class="menu-card" data-link="guru.html">
+                <div class="menu-icon"><i class="fas fa-chalkboard-user"></i></div>
+                <h3>Manajemen Guru</h3>
+                <p>Tambah, edit, hapus data guru & mata pelajaran</p>
+            </div>
+            <!-- Manajemen Siswa & Kelas -->
+            <div class="menu-card" data-link="siswa.html">
+                <div class="menu-icon"><i class="fas fa-users"></i></div>
+                <h3>Manajemen Siswa & Kelas</h3>
+                <p>Kelola kelas dan data siswa (impor CSV, tambah manual)</p>
+            </div>
+            <!-- Jadwal Pelajaran -->
+            <div class="menu-card" data-link="jadwal.html">
+                <div class="menu-icon"><i class="fas fa-calendar-alt"></i></div>
+                <h3>Jadwal Pelajaran</h3>
+                <p>Atur jadwal per kelas (Senin–Jumat, 10 JP)</p>
+            </div>
+            <!-- Jadwal Per Siswa -->
+            <div class="menu-card" data-link="jadwalsiswa.html">
+                <div class="menu-icon"><i class="fas fa-user-graduate"></i></div>
+                <h3>Jadwal Per Siswa</h3>
+                <p>Atur jadwal mapel produktif per siswa per minggu</p>
+            </div>
+            <!-- Absensi Guru -->
+            <div class="menu-card" data-link="gurungabsen.html">
+                <div class="menu-icon"><i class="fas fa-clipboard-list"></i></div>
+                <h3>Absensi Guru</h3>
+                <p>Input kehadiran siswa per jam pelajaran (guru)</p>
+            </div>
+            <!-- Rekap Absensi Kelas -->
+            <div class="menu-card" data-link="absensekelas.html">
+                <div class="menu-icon"><i class="fas fa-chart-line"></i></div>
+                <h3>Rekap Absensi Kelas</h3>
+                <p>Lihat rekap kehadiran siswa per kelas & minggu</p>
+            </div>
+            <!-- Pengaturan Minggu -->
+            <div class="menu-card" data-link="pengaturanminggu.html">
+                <div class="menu-icon"><i class="fas fa-calendar-week"></i></div>
+                <h3>Pengaturan Minggu</h3>
+                <p>Atur tanggal awal dan rentang minggu aktif</p>
+            </div>
+            <!-- Tampilan Jadwal Kelas -->
+            <div class="menu-card" data-link="tampilan_jadwal.html">
+                <div class="menu-icon"><i class="fas fa-eye"></i></div>
+                <h3>Tampilan Jadwal Kelas</h3>
+                <p>Lihat jadwal semua kelas (hanya baca)</p>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            <i class="fas fa-shield-alt"></i> Sistem Manajemen Teaching Factory Teknik Otomasi Industri
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAH1Gu9biLuCopu_PNlm9pKMHB2PBsmHk0",
+            authDomain: "jadwal-toi-1aa56.firebaseapp.com",
+            projectId: "jadwal-toi-1aa56",
+            storageBucket: "jadwal-toi-1aa56.firebasestorage.app",
+            messagingSenderId: "230279522919",
+            appId: "1:230279522919:web:18012ddce6f920050082c2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const userEmailSpan = document.getElementById('userEmail');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        // Cek autentikasi dan role
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                // Tidak login, redirect ke halaman login
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Tampilkan email user
+            userEmailSpan.textContent = user.email || user.uid;
+
+            // Cek role dari Firestore (opsional, untuk keamanan)
+            try {
+                const userDocRef = doc(db, "users", user.uid);
+                const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists()) {
+                    const role = userDoc.data().role;
+                    if (role !== 'admin') {
+                        // Jika bukan admin, redirect ke halaman sesuai role atau logout
+                        alert('Anda tidak memiliki akses sebagai admin. Silakan login dengan akun admin.');
+                        await signOut(auth);
+                        window.location.href = 'index.html';
+                        return;
+                    }
+                } else {
+                    // Jika tidak ada dokumen, tolak akses
+                    alert('Akun tidak dikenali sebagai admin. Hubungi administrator.');
+                    await signOut(auth);
+                    window.location.href = 'index.html';
+                    return;
+                }
+            } catch (error) {
+                console.error("Error checking role:", error);
+                // Toleransi jika gagal ambil role (misal offline), tapi tetap izinkan?
+                // Untuk keamanan, lebih baik logout
+                alert('Gagal verifikasi hak akses. Silakan login ulang.');
+                await signOut(auth);
+                window.location.href = 'index.html';
+            }
+        });
+
+        // Logout
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error("Logout error:", error);
+                alert("Gagal logout.");
+            }
+        });
+
+        // Redirect ke halaman lain saat klik kartu menu
+        document.querySelectorAll('.menu-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const link = card.getAttribute('data-link');
+                if (link) {
+                    window.location.href = link;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
