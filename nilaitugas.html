@@ -2,67 +2,104 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Penilaian Tugas - Teknik Otomasi Industri</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Rekap Nilai Tugas - Teknik Otomasi Industri</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: #eef2f8; padding: 30px 20px; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 32px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding: 28px 32px; }
+        .container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 32px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding: 28px 32px; }
         h1 { font-size: 1.7rem; color: #1a4a6f; margin-bottom: 6px; display: flex; align-items: center; gap: 12px; }
-        .sub { color: #5a6e7c; margin-bottom: 28px; border-left: 4px solid #2c7a4d; padding-left: 16px; }
+        h1 small { font-size: 0.75rem; background: #e9f0f5; padding: 4px 12px; border-radius: 40px; font-weight: normal; }
+        .sub { color: #5a6e7c; margin-bottom: 28px; border-left: 4px solid #2c7a4d; padding-left: 16px; font-size: 0.9rem; }
         .card { background: #f9fbfd; border-radius: 24px; padding: 20px 24px; margin-bottom: 28px; border: 1px solid #e2edf2; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+        .form-group { flex: 1; min-width: 180px; }
+        label { display: block; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; color: #2c6b4f; margin-bottom: 6px; letter-spacing: 0.5px; }
+        select, button { width: 100%; padding: 10px 14px; border-radius: 28px; border: 1px solid #cfdfea; background: white; font-size: 0.85rem; }
+        button { background: #2c7a4d; color: white; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #1e5e3a; transform: translateY(-1px); }
+        .btn-outline { background: transparent; border: 1px solid #2c7a4d; color: #2c7a4d; }
+        .btn-outline:hover { background: #eef5ea; transform: none; }
+        .table-wrapper { overflow-x: auto; border-radius: 20px; border: 1px solid #e2edf2; margin-top: 16px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 600px; }
+        th { background: #eef4fa; padding: 12px; text-align: left; font-weight: 700; color: #1e4a6e; border-bottom: 1px solid #d4e2ef; position: sticky; top: 0; }
+        td { padding: 10px 12px; border-bottom: 1px solid #ecf3f8; vertical-align: middle; }
+        .nilai-badge { background: #2c7a4d; color: white; border-radius: 20px; padding: 4px 10px; display: inline-block; font-size: 0.75rem; font-weight: 600; }
+        .nilai-rendah { background: #d9534f; }
+        .nilai-sedang { background: #f0ad4e; }
+        .loading { text-align: center; padding: 40px; color: #6c86a0; }
+        .empty-state { text-align: center; padding: 40px; color: #8aa0b0; }
+        .footer-note { margin-top: 24px; font-size: 0.7rem; text-align: center; color: #6c86a0; background: #f6fafd; padding: 12px; border-radius: 24px; }
+        .export-btn { margin-top: 16px; display: flex; justify-content: flex-end; gap: 12px; }
         .info-bar { background: #eef4fa; padding: 16px 20px; border-radius: 20px; margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 24px; }
         .info-item { display: flex; align-items: center; gap: 12px; }
-        .table-wrapper { overflow-x: auto; border-radius: 20px; border: 1px solid #e2edf2; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        th, td { padding: 12px; border-bottom: 1px solid #ecf3f8; text-align: left; }
-        th { background: #eef4fa; font-weight: 700; color: #1e4a6e; }
-        .nilai-input { width: 80px; padding: 8px; border-radius: 20px; border: 1px solid #cfdfea; text-align: center; }
-        button { background: #2c7a4d; color: white; border: none; padding: 10px 24px; border-radius: 28px; font-weight: 600; cursor: pointer; }
-        .btn-save { background: #2c7a4d; }
-        .btn-outline { background: transparent; border: 1px solid #2c7a4d; color: #2c7a4d; }
-        .loading { text-align: center; padding: 40px; color: #6c86a0; }
-        .footer-note { margin-top: 24px; font-size: 0.7rem; text-align: center; color: #6c86a0; }
-        @media (max-width:700px) { .container { padding: 18px; } .nilai-input { width: 60px; } }
+        @media (max-width: 700px) { .container { padding: 18px; } .form-row { flex-direction: column; } }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1><i class="fas fa-star"></i> Penilaian Tugas</h1>
-    <div class="sub" id="infoTugas">Memuat informasi tugas...</div>
+    <h1><i class="fas fa-chart-line"></i> Rekap Nilai Tugas <small>Teknik Otomasi Industri</small></h1>
+    <div class="sub">📊 Menampilkan rekap nilai tugas per kelas & mata pelajaran</div>
 
-    <div id="loadingState" class="loading"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>
+    <div id="authStatus" class="loading">⏳ Memeriksa akses...</div>
 
     <div id="mainContent" style="display: none;">
-        <div class="info-bar">
-            <div class="info-item"><i class="fas fa-chalkboard-user"></i> <strong id="guruInfo">-</strong></div>
-            <div class="info-item"><i class="fas fa-book"></i> <strong id="mapelInfo">-</strong></div>
-            <div class="info-item"><i class="fas fa-school"></i> <strong id="kelasInfo">-</strong></div>
-            <div class="info-item"><i class="fas fa-tasks"></i> <strong id="tugasInfo">-</strong></div>
-            <div class="info-item"><i class="fas fa-chart-line"></i> Skor Maks: <strong id="skorMaksInfo">100</strong></div>
+        <!-- Filter -->
+        <div class="card">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>🏫 Pilih Kelas</label>
+                    <select id="kelasSelect">
+                        <option value="">-- Pilih Kelas --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>📚 Pilih Mapel</label>
+                    <select id="mapelSelect" disabled>
+                        <option value="">-- Pilih Kelas Dulu --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button id="filterBtn"><i class="fas fa-search"></i> Tampilkan Rekap</button>
+                </div>
+                <div class="form-group">
+                    <button id="exportBtn" class="btn-outline"><i class="fas fa-file-excel"></i> Ekspor CSV</button>
+                </div>
+            </div>
         </div>
 
-        <div class="card">
-            <div class="table-wrapper">
-                <table>
-                    <thead><tr><th>No</th><th>Nama Siswa</th><th>Nilai</th><th>Aksi</th></tr></thead>
-                    <tbody id="siswaTbody"></tbody>
-                </table>
+        <div id="rekapPanel" style="display: none;">
+            <div class="info-bar">
+                <div class="info-item"><i class="fas fa-school"></i> Kelas: <strong id="kelasInfo">-</strong></div>
+                <div class="info-item"><i class="fas fa-book"></i> Mapel: <strong id="mapelInfo">-</strong></div>
+                <div class="info-item"><i class="fas fa-tasks"></i> Jumlah Tugas: <strong id="jmlTugasInfo">0</strong></div>
+                <div class="info-item"><i class="fas fa-users"></i> Jumlah Siswa: <strong id="jmlSiswaInfo">0</strong></div>
             </div>
-            <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:12px;">
-                <button id="saveAllBtn" class="btn-save"><i class="fas fa-save"></i> Simpan Semua</button>
-                <button id="backBtn" class="btn-outline"><i class="fas fa-arrow-left"></i> Kembali</button>
+
+            <div class="card">
+                <div class="table-wrapper">
+                    <table id="rekapTable">
+                        <thead id="tableHeader">
+                            <tr><th>No</th><th>Nama Siswa</th><th id="tugasHeader">Memuat...</th></thead>
+                        <tbody id="tableBody">
+                            <tr><td colspan="3" class="empty-state">Pilih kelas dan mapel untuk menampilkan rekap</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="export-btn">
+                    <button id="printBtn" class="btn-outline"><i class="fas fa-print"></i> Cetak</button>
+                </div>
             </div>
         </div>
     </div>
-    <div class="footer-note">💡 Masukkan nilai sesuai skor maksimal. Nilai akan tersimpan otomatis per siswa.</div>
+    <div class="footer-note">💡 Rekap nilai tugas per siswa. Nilai rata-rata dihitung dari semua tugas yang sudah dinilai.</div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, doc, getDocs, getDoc, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, doc, getDocs, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -78,164 +115,318 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
 
-    // Ambil parameter URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const tugasId = urlParams.get('tugasId');
-    const guruId = urlParams.get('guruId');
-    const mapelKode = urlParams.get('mapel');
-    const kelasId = urlParams.get('kelasId');
-    const namaTugas = decodeURIComponent(urlParams.get('namaTugas') || '');
-
-    let siswaList = [];
-    let nilaiMap = new Map(); // key: siswaId, value: nilai
-    let skorMaksimal = 100;
-
     // DOM
-    const loadingState = document.getElementById('loadingState');
+    const authStatus = document.getElementById('authStatus');
     const mainContent = document.getElementById('mainContent');
-    const guruInfo = document.getElementById('guruInfo');
-    const mapelInfo = document.getElementById('mapelInfo');
+    const kelasSelect = document.getElementById('kelasSelect');
+    const mapelSelect = document.getElementById('mapelSelect');
+    const filterBtn = document.getElementById('filterBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const printBtn = document.getElementById('printBtn');
+    const rekapPanel = document.getElementById('rekapPanel');
     const kelasInfo = document.getElementById('kelasInfo');
-    const tugasInfo = document.getElementById('tugasInfo');
-    const skorMaksInfo = document.getElementById('skorMaksInfo');
-    const siswaTbody = document.getElementById('siswaTbody');
-    const saveAllBtn = document.getElementById('saveAllBtn');
-    const backBtn = document.getElementById('backBtn');
+    const mapelInfo = document.getElementById('mapelInfo');
+    const jmlTugasInfo = document.getElementById('jmlTugasInfo');
+    const jmlSiswaInfo = document.getElementById('jmlSiswaInfo');
+    const tableHeader = document.getElementById('tableHeader');
+    const tableBody = document.getElementById('tableBody');
+    const tugasHeader = document.getElementById('tugasHeader');
 
-    // ==================== LOAD DATA ====================
-    async function loadData() {
-        if (!tugasId) {
-            alert("Tugas tidak ditemukan!");
-            window.location.href = 'penugasan.html';
-            return;
-        }
+    let daftarKelas = [];
+    let daftarMapelByKelas = new Map(); // key: kelasId, value: array of {kode, nama}
+    let currentKelasId = null;
+    let currentMapelKode = null;
+    let rekapData = { tugasList: [], siswaList: [], nilaiMap: new Map() }; // nilaiMap key: siswaId_tugasId
 
-        // Load info tugas
-        const tugasRef = doc(db, "penugasan", tugasId);
-        const tugasSnap = await getDoc(tugasRef);
-        if (!tugasSnap.exists()) {
-            alert("Tugas tidak ditemukan!");
-            window.location.href = 'penugasan.html';
-            return;
-        }
-        const tugas = tugasSnap.data();
-        skorMaksimal = tugas.skorMaksimal || 100;
-        skorMaksInfo.textContent = skorMaksimal;
-
-        // Load guru
-        const guruRef = doc(db, "guru", tugas.guruId);
-        const guruSnap = await getDoc(guruRef);
-        guruInfo.textContent = guruSnap.exists() ? guruSnap.data().nama : tugas.guruId;
-
-        mapelInfo.textContent = `${tugas.mapelKode} - ${tugas.mapelNama}`;
-        tugasInfo.textContent = tugas.nama;
-
-        // Load kelas
-        const kelasRef = doc(db, "kelas", tugas.kelasId);
-        const kelasSnap = await getDoc(kelasRef);
-        kelasInfo.textContent = kelasSnap.exists() ? kelasSnap.data().nama : tugas.kelasId;
-
-        // Load siswa
-        const siswaRef = collection(db, "kelas", tugas.kelasId, "siswa");
-        const siswaSnap = await getDocs(siswaRef);
-        siswaList = [];
-        siswaSnap.forEach(doc => {
-            siswaList.push({ id: doc.id, no: doc.data().no, nama: doc.data().nama });
-        });
-        siswaList.sort((a,b) => a.no - b.no);
-
-        // Load nilai yang sudah ada
-        const nilaiQuery = query(collection(db, "nilai_tugas"), where("tugasId", "==", tugasId));
-        const nilaiSnap = await getDocs(nilaiQuery);
-        nilaiSnap.forEach(doc => {
-            const data = doc.data();
-            nilaiMap.set(data.siswaId, data.nilai);
-        });
-
-        renderTable();
-        loadingState.style.display = 'none';
+    // ==================== GUARD: HANYA ADMIN ====================
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) { window.location.href = 'index.html'; return; }
+        if (user.email !== "teknikotomasiindustri.nepan@gmail.com") { window.location.href = 'dashboard_guru.html'; return; }
+        
+        authStatus.style.display = 'none';
         mainContent.style.display = 'block';
+        await loadKelas();
+    });
+
+    // ==================== LOAD KELAS ====================
+    async function loadKelas() {
+        const snapshot = await getDocs(collection(db, "kelas"));
+        daftarKelas = [];
+        snapshot.forEach(doc => {
+            daftarKelas.push({ id: doc.id, nama: doc.data().nama });
+        });
+        daftarKelas.sort((a,b) => a.nama.localeCompare(b.nama));
+        kelasSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+        daftarKelas.forEach(k => {
+            const opt = document.createElement('option');
+            opt.value = k.id;
+            opt.textContent = k.nama;
+            kelasSelect.appendChild(opt);
+        });
     }
 
-    // ==================== RENDER TABEL ====================
-    function renderTable() {
-        if (siswaList.length === 0) {
-            siswaTbody.innerHTML = '<tr><td colspan="4">Tidak ada siswa di kelas ini</td></tr>';
+    // ==================== LOAD MAPEL PER KELAS (dari tugas yang sudah ada) ====================
+    kelasSelect.addEventListener('change', async () => {
+        const kelasId = kelasSelect.value;
+        if (!kelasId) {
+            mapelSelect.innerHTML = '<option value="">-- Pilih Kelas Dulu --</option>';
+            mapelSelect.disabled = true;
             return;
         }
-        let html = '';
-        siswaList.forEach((siswa, idx) => {
-            const nilai = nilaiMap.get(siswa.id) || '';
-            html += `<tr data-siswa-id="${siswa.id}">
-                <td>${siswa.no}</td>
-                <td><strong>${escapeHtml(siswa.nama)}</strong></td>
-                <td><input type="number" class="nilai-input" data-siswa-id="${siswa.id}" value="${nilai}" min="0" max="${skorMaksimal}" step="1"></td>
-                <td><button class="save-single" data-siswa-id="${siswa.id}">💾 Simpan</button></td>
-            </tr>`;
+        
+        // Ambil semua tugas untuk kelas ini
+        const tugasQuery = query(collection(db, "penugasan"), where("kelasId", "==", kelasId));
+        const tugasSnap = await getDocs(tugasQuery);
+        const mapelSet = new Map();
+        tugasSnap.forEach(doc => {
+            const data = doc.data();
+            if (data.mapelKode && data.mapelNama) {
+                if (!mapelSet.has(data.mapelKode)) {
+                    mapelSet.set(data.mapelKode, { kode: data.mapelKode, nama: data.mapelNama });
+                }
+            }
         });
-        siswaTbody.innerHTML = html;
-
-        // Event listener per siswa
-        document.querySelectorAll('.save-single').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const siswaId = btn.dataset.siswaId;
-                const input = document.querySelector(`.nilai-input[data-siswa-id="${siswaId}"]`);
-                const nilai = parseInt(input.value) || 0;
-                await simpanNilai(siswaId, nilai);
-                alert(`Nilai untuk ${siswaList.find(s => s.id === siswaId)?.nama} disimpan!`);
-            });
+        
+        daftarMapelByKelas.set(kelasId, Array.from(mapelSet.values()));
+        const mapelList = daftarMapelByKelas.get(kelasId);
+        
+        mapelSelect.disabled = false;
+        mapelSelect.innerHTML = '<option value="">-- Semua Mapel --</option>';
+        mapelList.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.kode;
+            opt.textContent = `${m.kode} - ${m.nama}`;
+            mapelSelect.appendChild(opt);
         });
+    });
 
-        // Auto-save on input change (opsional)
-        document.querySelectorAll('.nilai-input').forEach(input => {
-            input.addEventListener('change', async (e) => {
-                const siswaId = input.dataset.siswaId;
-                const nilai = parseInt(input.value) || 0;
-                await simpanNilai(siswaId, nilai);
-            });
-        });
-    }
-
-    // ==================== SIMPAN NILAI ====================
-    async function simpanNilai(siswaId, nilai) {
-        const docId = `${siswaId}_${tugasId}`;
-        const nilaiRef = doc(db, "nilai_tugas", docId);
-        await setDoc(nilaiRef, {
-            siswaId: siswaId,
-            tugasId: tugasId,
-            nilai: Math.min(nilai, skorMaksimal),
-            updatedAt: new Date().toISOString()
-        }, { merge: true });
-        nilaiMap.set(siswaId, nilai);
-    }
-
-    // ==================== SIMPAN SEMUA ====================
-    async function saveAll() {
-        const inputs = document.querySelectorAll('.nilai-input');
-        for (const input of inputs) {
-            const siswaId = input.dataset.siswaId;
-            const nilai = parseInt(input.value) || 0;
-            await simpanNilai(siswaId, nilai);
+    // ==================== LOAD REKAP ====================
+    async function loadRekap() {
+        const kelasId = kelasSelect.value;
+        const mapelKode = mapelSelect.value;
+        
+        if (!kelasId) {
+            alert("Pilih kelas terlebih dahulu!");
+            return;
         }
-        alert("Semua nilai berhasil disimpan!");
+        
+        currentKelasId = kelasId;
+        currentMapelKode = mapelKode;
+        
+        tableBody.innerHTML = '<tr><td colspan="3" class="loading"><i class="fas fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+        rekapPanel.style.display = 'block';
+        
+        try {
+            // 1. Ambil semua tugas untuk kelas ini (filter mapel jika dipilih)
+            let tugasQuery = query(collection(db, "penugasan"), where("kelasId", "==", kelasId));
+            const tugasSnap = await getDocs(tugasQuery);
+            let tugasList = [];
+            tugasSnap.forEach(doc => {
+                const data = doc.data();
+                if (!mapelKode || data.mapelKode === mapelKode) {
+                    tugasList.push({ id: doc.id, ...data });
+                }
+            });
+            tugasList.sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt));
+            
+            if (tugasList.length === 0) {
+                tableBody.innerHTML = `<td><td colspan="3" class="empty-state">Belum ada tugas untuk kelas ini${mapelKode ? ' dengan mapel ini' : ''}</td></tr>`;
+                jmlTugasInfo.textContent = '0';
+                return;
+            }
+            
+            // 2. Ambil siswa
+            const siswaRef = collection(db, "kelas", kelasId, "siswa");
+            const siswaSnap = await getDocs(siswaRef);
+            let siswaList = [];
+            siswaSnap.forEach(doc => {
+                siswaList.push({ id: doc.id, no: doc.data().no, nama: doc.data().nama });
+            });
+            siswaList.sort((a,b) => a.no - b.no);
+            
+            // 3. Ambil nilai untuk semua tugas
+            const nilaiMap = new Map(); // key: siswaId_tugasId, value: nilai
+            for (const tugas of tugasList) {
+                const nilaiQuery = query(collection(db, "nilai_tugas"), where("tugasId", "==", tugas.id));
+                const nilaiSnap = await getDocs(nilaiQuery);
+                nilaiSnap.forEach(doc => {
+                    const data = doc.data();
+                    const key = `${data.siswaId}_${tugas.id}`;
+                    nilaiMap.set(key, data.nilai);
+                });
+            }
+            
+            // 4. Render header
+            let headerHtml = '<tr><th>No</th><th>Nama Siswa</th>';
+            for (const tugas of tugasList) {
+                headerHtml += `<th title="${escapeHtml(tugas.nama)}">${escapeHtml(tugas.nama.length > 20 ? tugas.nama.substring(0,20)+'...' : tugas.nama)}<br><small>/${tugas.skorMaksimal || 100}</small></th>`;
+            }
+            headerHtml += `<th>Rata-rata</th><th>Grade</th>`;
+            headerHtml += '<tr>';
+            tableHeader.innerHTML = headerHtml;
+            
+            // 5. Render body
+            let bodyHtml = '';
+            let totalNilaiPerSiswa = [];
+            
+            for (const siswa of siswaList) {
+                let rowNilai = [];
+                let totalNilai = 0;
+                let tugasTerdinilai = 0;
+                
+                for (const tugas of tugasList) {
+                    const key = `${siswa.id}_${tugas.id}`;
+                    const nilai = nilaiMap.get(key);
+                    const nilaiTampil = nilai !== undefined ? nilai : '-';
+                    rowNilai.push(nilaiTampil);
+                    if (nilai !== undefined) {
+                        totalNilai += nilai;
+                        tugasTerdinilai++;
+                    }
+                }
+                
+                const rataRata = tugasTerdinilai > 0 ? (totalNilai / tugasTerdinilai).toFixed(1) : '-';
+                let grade = '-', gradeClass = '';
+                const rata = parseFloat(rataRata);
+                if (!isNaN(rata)) {
+                    if (rata >= 85) { grade = 'A'; gradeClass = 'nilai-badge'; }
+                    else if (rata >= 70) { grade = 'B'; gradeClass = 'nilai-badge nilai-sedang'; }
+                    else if (rata >= 60) { grade = 'C'; gradeClass = 'nilai-badge nilai-sedang'; }
+                    else if (rata >= 50) { grade = 'D'; gradeClass = 'nilai-badge nilai-rendah'; }
+                    else { grade = 'E'; gradeClass = 'nilai-badge nilai-rendah'; }
+                }
+                
+                bodyHtml += `<tr>`;
+                bodyHtml += `<td>${siswa.no}</td>`;
+                bodyHtml += `<td><strong>${escapeHtml(siswa.nama)}</strong></td>`;
+                for (const nilai of rowNilai) {
+                    let nilaiClass = '';
+                    if (typeof nilai === 'number') {
+                        if (nilai >= 85) nilaiClass = 'nilai-badge';
+                        else if (nilai >= 70) nilaiClass = 'nilai-badge nilai-sedang';
+                        else nilaiClass = 'nilai-badge nilai-rendah';
+                        bodyHtml += `<td style="text-align:center"><span class="${nilaiClass}">${nilai}</span></td>`;
+                    } else {
+                        bodyHtml += `<td style="text-align:center; color:#999">-</td>`;
+                    }
+                }
+                bodyHtml += `<td style="text-align:center; font-weight:bold">${rataRata}</td>`;
+                bodyHtml += `<td style="text-align:center"><span class="${gradeClass}">${grade}</span></td>`;
+                bodyHtml += `</tr>`;
+                
+                totalNilaiPerSiswa.push({ nama: siswa.nama, rata: rataRata, grade });
+            }
+            
+            // Tambahkan baris rata-rata kelas
+            bodyHtml += `<tr style="background-color:#eef4fa; font-weight:bold;">
+                <td colspan="2">Rata-rata Kelas</td>`;
+            for (const tugas of tugasList) {
+                let totalTugas = 0;
+                let countTugas = 0;
+                for (const siswa of siswaList) {
+                    const key = `${siswa.id}_${tugas.id}`;
+                    const nilai = nilaiMap.get(key);
+                    if (nilai !== undefined) {
+                        totalTugas += nilai;
+                        countTugas++;
+                    }
+                }
+                const rataTugas = countTugas > 0 ? (totalTugas / countTugas).toFixed(1) : '-';
+                bodyHtml += `<td style="text-align:center">${rataTugas}</td>`;
+            }
+            // Rata-rata dari semua nilai
+            let semuaNilai = [];
+            for (const siswa of siswaList) {
+                for (const tugas of tugasList) {
+                    const key = `${siswa.id}_${tugas.id}`;
+                    const nilai = nilaiMap.get(key);
+                    if (nilai !== undefined) semuaNilai.push(nilai);
+                }
+            }
+            const rataKeseluruhan = semuaNilai.length > 0 ? (semuaNilai.reduce((a,b) => a+b,0) / semuaNilai.length).toFixed(1) : '-';
+            bodyHtml += `<td style="text-align:center; font-weight:bold">${rataKeseluruhan}</td><td></td>`;
+            bodyHtml += `</table>`;
+            
+            tableBody.innerHTML = bodyHtml;
+            
+            // Update info bar
+            const kelas = daftarKelas.find(k => k.id === kelasId);
+            kelasInfo.textContent = kelas ? kelas.nama : kelasId;
+            const mapel = daftarMapelByKelas.get(kelasId)?.find(m => m.kode === mapelKode);
+            mapelInfo.textContent = mapel ? `${mapel.kode} - ${mapel.nama}` : (mapelKode || 'Semua Mapel');
+            jmlTugasInfo.textContent = tugasList.length;
+            jmlSiswaInfo.textContent = siswaList.length;
+            
+        } catch (error) {
+            console.error(error);
+            tableBody.innerHTML = `<td><td colspan="3" class="empty-state">Gagal memuat data: ${error.message}</td></tr>`;
+        }
     }
-
+    
+    // ==================== EKSPOR CSV ====================
+    function exportToCSV() {
+        const table = document.getElementById('rekapTable');
+        const rows = table.querySelectorAll('tr');
+        let csvContent = [];
+        
+        rows.forEach(row => {
+            const rowData = [];
+            const cols = row.querySelectorAll('th, td');
+            cols.forEach(col => {
+                let text = col.innerText;
+                // Bersihkan teks yang mengandung <br> atau HTML
+                text = text.replace(/\n/g, ' ').trim();
+                rowData.push(`"${text.replace(/"/g, '""')}"`);
+            });
+            csvContent.push(rowData.join(','));
+        });
+        
+        const blob = new Blob(["\uFEFF" + csvContent.join('\n')], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `rekap_nilai_${kelasInfo.innerText}_${mapelInfo.innerText}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+    
+    // ==================== PRINT ====================
+    function printRekap() {
+        const printContent = document.getElementById('rekapPanel').cloneNode(true);
+        const originalTitle = document.title;
+        document.title = `Rekap Nilai ${kelasInfo.innerText} - ${mapelInfo.innerText}`;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+            <head><title>${document.title}</title>
+            <style>
+                body { font-family: 'Inter', sans-serif; padding: 20px; }
+                table { border-collapse: collapse; width: 100%; }
+                th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                th { background: #eef4fa; }
+                .nilai-badge { background: #2c7a4d; color: white; padding: 2px 8px; border-radius: 12px; }
+                .nilai-rendah { background: #d9534f; }
+                .nilai-sedang { background: #f0ad4e; }
+            </style>
+            </head>
+            <body>${printContent.innerHTML}</body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+        document.title = originalTitle;
+    }
+    
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
     }
-
-    // ==================== AUTH & INIT ====================
-    onAuthStateChanged(auth, async (user) => {
-        if (!user) { window.location.href = 'index.html'; return; }
-        // Guru dan admin bisa mengakses halaman ini
-        await loadData();
-    });
-
-    saveAllBtn.addEventListener('click', saveAll);
-    backBtn.addEventListener('click', () => {
-        window.location.href = 'penugasan.html';
-    });
+    
+    filterBtn.addEventListener('click', loadRekap);
+    exportBtn.addEventListener('click', exportToCSV);
+    printBtn.addEventListener('click', printRekap);
 </script>
 </body>
 </html>
