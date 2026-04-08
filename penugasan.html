@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajemen Penugasan - Teknik Otomasi Industri</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #eef2f8; padding: 30px 20px; }
+        .container { max-width: 1300px; margin: 0 auto; background: white; border-radius: 32px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding: 28px 32px; }
+        h1 { font-size: 1.7rem; color: #1a4a6f; margin-bottom: 6px; display: flex; align-items: center; gap: 12px; }
+        h1 small { font-size: 0.75rem; background: #e9f0f5; padding: 4px 12px; border-radius: 40px; font-weight: normal; }
+        .sub { color: #5a6e7c; margin-bottom: 28px; border-left: 4px solid #2c7a4d; padding-left: 16px; font-size: 0.9rem; }
+        .card { background: #f9fbfd; border-radius: 24px; padding: 20px 24px; margin-bottom: 28px; border: 1px solid #e2edf2; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+        .form-group { flex: 1; min-width: 180px; }
+        label { display: block; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; color: #2c6b4f; margin-bottom: 6px; letter-spacing: 0.5px; }
+        input, select, textarea, button { width: 100%; padding: 10px 14px; border-radius: 28px; border: 1px solid #cfdfea; background: white; font-size: 0.85rem; }
+        button { background: #2c7a4d; color: white; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #1e5e3a; transform: translateY(-1px); }
+        .btn-outline { background: transparent; border: 1px solid #2c7a4d; color: #2c7a4d; }
+        .btn-outline:hover { background: #eef5ea; transform: none; }
+        .btn-danger { background: #d9534f; }
+        .btn-danger:hover { background: #c9302c; }
+        .table-wrapper { overflow-x: auto; border-radius: 20px; border: 1px solid #e2edf2; margin-top: 16px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 800px; }
+        th { background: #eef4fa; padding: 12px; text-align: left; font-weight: 700; color: #1e4a6e; border-bottom: 1px solid #d4e2ef; }
+        td { padding: 10px 12px; border-bottom: 1px solid #ecf3f8; vertical-align: middle; }
+        .loading { text-align: center; padding: 40px; color: #6c86a0; }
+        .footer-note { margin-top: 24px; font-size: 0.7rem; text-align: center; color: #6c86a0; background: #f6fafd; padding: 12px; border-radius: 24px; }
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:1000; }
+        .modal-content { background:white; max-width:500px; width:90%; border-radius:24px; padding:24px; }
+        .modal-header { display:flex; justify-content:space-between; margin-bottom:20px; }
+        .close-modal { font-size:24px; cursor:pointer; background:none; border:none; }
+        @media (max-width:700px) { .container { padding:18px; } .form-row { flex-direction:column; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1><i class="fas fa-tasks"></i> Manajemen Penugasan <small>Teknik Otomasi Industri</small></h1>
+    <div class="sub">➕ Kelola tugas per mata pelajaran & kelas</div>
+
+    <div id="authStatus" class="loading">⏳ Memeriksa akses...</div>
+
+    <div id="mainContent" style="display: none;">
+        <!-- Form Tambah Tugas -->
+        <div class="card">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>👨‍🏫 Pilih Guru</label>
+                    <select id="guruSelect"></select>
+                </div>
+                <div class="form-group">
+                    <label>📚 Pilih Mapel</label>
+                    <select id="mapelSelect" disabled><option value="">-- Pilih Guru Dulu --</option></select>
+                </div>
+                <div class="form-group">
+                    <label>🏫 Pilih Kelas</label>
+                    <select id="kelasSelect"></select>
+                </div>
+            </div>
+            <div class="form-row" style="margin-top:16px;">
+                <div class="form-group">
+                    <label>📝 Nama Tugas</label>
+                    <input type="text" id="namaTugasInput" placeholder="Contoh: UTS Genap, Tugas 1, dll">
+                </div>
+                <div class="form-group">
+                    <label>📅 Tenggat (opsional)</label>
+                    <input type="date" id="tenggatInput">
+                </div>
+                <div class="form-group">
+                    <label>📊 Skor Maksimal</label>
+                    <input type="number" id="skorMaksimalInput" value="100" min="1" max="1000">
+                </div>
+                <div class="form-group">
+                    <button id="tambahTugasBtn" class="btn-secondary">➕ Tambah Tugas</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daftar Tugas -->
+        <div class="card">
+            <div class="table-wrapper">
+                <table id="tugasTable">
+                    <thead>
+                        <tr><th>No</th><th>Guru</th><th>Mapel</th><th>Kelas</th><th>Nama Tugas</th><th>Tenggat</th><th>Skor Maks</th><th>Aksi</th></tr>
+                    </thead>
+                    <tbody id="tugasTbody">
+                        <tr><td colspan="8">Memuat data tugas...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-note">💡 Setelah membuat tugas, guru dapat memberikan nilai di halaman <strong>Penilaian Tugas</strong>.</div>
+</div>
+
+<!-- Modal Edit Tugas -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h3>Edit Tugas</h3><button class="close-modal">&times;</button></div>
+        <div class="form-group"><label>Nama Tugas</label><input type="text" id="editNamaTugas" class="full-width"></div>
+        <div class="form-group"><label>Tenggat</label><input type="date" id="editTenggat" class="full-width"></div>
+        <div class="form-group"><label>Skor Maksimal</label><input type="number" id="editSkorMaksimal" class="full-width"></div>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button id="saveEditBtn" style="flex:1">💾 Simpan</button>
+            <button id="cancelEditBtn" class="btn-outline" style="flex:1">Batal</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDKR4e_9uHBhBqQEdxR7s2R807fawb7J8Y",
+        authDomain: "absensi-toi.firebaseapp.com",
+        projectId: "absensi-toi",
+        storageBucket: "absensi-toi.firebasestorage.app",
+        messagingSenderId: "1069310497322",
+        appId: "1:1069310497322:web:2705d66e041c41a1626953"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // DOM
+    const authStatus = document.getElementById('authStatus');
+    const mainContent = document.getElementById('mainContent');
+    const guruSelect = document.getElementById('guruSelect');
+    const mapelSelect = document.getElementById('mapelSelect');
+    const kelasSelect = document.getElementById('kelasSelect');
+    const namaTugasInput = document.getElementById('namaTugasInput');
+    const tenggatInput = document.getElementById('tenggatInput');
+    const skorMaksimalInput = document.getElementById('skorMaksimalInput');
+    const tambahTugasBtn = document.getElementById('tambahTugasBtn');
+    const tugasTbody = document.getElementById('tugasTbody');
+
+    // Modal
+    const editModal = document.getElementById('editModal');
+    const editNamaTugas = document.getElementById('editNamaTugas');
+    const editTenggat = document.getElementById('editTenggat');
+    const editSkorMaksimal = document.getElementById('editSkorMaksimal');
+    const saveEditBtn = document.getElementById('saveEditBtn');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const closeModalBtns = document.querySelectorAll('.close-modal');
+
+    let daftarGuru = [];
+    let daftarKelas = [];
+    let currentEditingId = null;
+
+    // ==================== LOAD GURU ====================
+    async function loadGuru() {
+        const snapshot = await getDocs(collection(db, "guru"));
+        daftarGuru = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.mapel && data.mapel.length > 0) {
+                daftarGuru.push({ id: doc.id, nama: data.nama, mapelList: data.mapel });
+            }
+        });
+        daftarGuru.sort((a,b) => a.nama.localeCompare(b.nama));
+        guruSelect.innerHTML = '<option value="">-- Pilih Guru --</option>';
+        daftarGuru.forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g.id;
+            opt.textContent = g.nama;
+            guruSelect.appendChild(opt);
+        });
+    }
+
+    // ==================== LOAD KELAS ====================
+    async function loadKelas() {
+        const snapshot = await getDocs(collection(db, "kelas"));
+        daftarKelas = [];
+        snapshot.forEach(doc => {
+            daftarKelas.push({ id: doc.id, nama: doc.data().nama });
+        });
+        daftarKelas.sort((a,b) => a.nama.localeCompare(b.nama));
+        kelasSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+        daftarKelas.forEach(k => {
+            const opt = document.createElement('option');
+            opt.value = k.id;
+            opt.textContent = k.nama;
+            kelasSelect.appendChild(opt);
+        });
+    }
+
+    // ==================== UPDATE MAPEL DROPDOWN ====================
+    guruSelect.addEventListener('change', () => {
+        const guruId = guruSelect.value;
+        const guru = daftarGuru.find(g => g.id === guruId);
+        if (!guru) {
+            mapelSelect.innerHTML = '<option value="">-- Pilih Guru Dulu --</option>';
+            mapelSelect.disabled = true;
+            return;
+        }
+        mapelSelect.disabled = false;
+        mapelSelect.innerHTML = '<option value="">-- Pilih Mapel --</option>';
+        guru.mapelList.forEach(m => {
+            if (m.mapel) {
+                const opt = document.createElement('option');
+                opt.value = m.kode || m.mapel.substring(0,3).toUpperCase();
+                opt.textContent = `${m.kode || m.mapel.substring(0,3).toUpperCase()} - ${m.mapel}`;
+                mapelSelect.appendChild(opt);
+            }
+        });
+    });
+
+    // ==================== LOAD TUGAS ====================
+    async function loadTugas() {
+        try {
+            const snapshot = await getDocs(collection(db, "penugasan"));
+            if (snapshot.empty) {
+                tugasTbody.innerHTML = '<tr><td colspan="8">Belum ada tugas. Buat tugas baru. </td></tr>';
+                return;
+            }
+            let tugasList = [];
+            snapshot.forEach(doc => {
+                tugasList.push({ id: doc.id, ...doc.data() });
+            });
+            tugasList.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            let html = '';
+            for (let i = 0; i < tugasList.length; i++) {
+                const t = tugasList[i];
+                const guru = daftarGuru.find(g => g.id === t.guruId);
+                const kelas = daftarKelas.find(k => k.id === t.kelasId);
+                html += `<tr>
+                    <td>${i+1}</td>
+                    <td>${escapeHtml(guru?.nama || t.guruId)}</td>
+                    <td>${escapeHtml(t.mapelKode)} - ${escapeHtml(t.mapelNama)}</td>
+                    <td>${escapeHtml(kelas?.nama || t.kelasId)}</td>
+                    <td>${escapeHtml(t.nama)}</td>
+                    <td>${t.tenggat || '-'}</td>
+                    <td>${t.skorMaksimal || 100}</td>
+                    <td>
+                        <button class="btn-edit" data-id="${t.id}" data-nama="${escapeHtml(t.nama)}" data-tenggat="${t.tenggat || ''}" data-skor="${t.skorMaksimal || 100}">✏️ Edit</button>
+                        <button class="btn-hapus" data-id="${t.id}">🗑️ Hapus</button>
+                        <button class="btn-nilai" data-id="${t.id}" data-guru="${t.guruId}" data-mapel="${t.mapelKode}" data-kelas="${t.kelasId}" data-namatugas="${escapeHtml(t.nama)}">⭐ Nilai</button>
+                    </td>
+                </tr>`;
+            }
+            tugasTbody.innerHTML = html;
+            
+            document.querySelectorAll('.btn-edit').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentEditingId = btn.dataset.id;
+                    editNamaTugas.value = btn.dataset.nama;
+                    editTenggat.value = btn.dataset.tenggat;
+                    editSkorMaksimal.value = btn.dataset.skor;
+                    editModal.style.display = 'flex';
+                });
+            });
+            document.querySelectorAll('.btn-hapus').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    if (confirm("Hapus tugas ini? Nilai siswa juga akan terhapus.")) {
+                        await deleteDoc(doc(db, "penugasan", btn.dataset.id));
+                        // Hapus juga nilai terkait
+                        const nilaiSnapshot = await getDocs(query(collection(db, "nilai_tugas"), where("tugasId", "==", btn.dataset.id)));
+                        const batch = writeBatch(db);
+                        nilaiSnapshot.forEach(d => batch.delete(d.ref));
+                        await batch.commit();
+                        loadTugas();
+                    }
+                });
+            });
+            document.querySelectorAll('.btn-nilai').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    window.location.href = `nilaitugas.html?tugasId=${btn.dataset.id}&guruId=${btn.dataset.guru}&mapel=${btn.dataset.mapel}&kelasId=${btn.dataset.kelas}&namaTugas=${encodeURIComponent(btn.dataset.namatugas)}`;
+                });
+            });
+        } catch (error) {
+            console.error(error);
+            tugasTbody.innerHTML = `<tr><td colspan="8">Gagal memuat tugas: ${error.message}</td></tr>`;
+        }
+    }
+
+    // ==================== TAMBAH TUGAS ====================
+    async function tambahTugas() {
+        const guruId = guruSelect.value;
+        const mapelKode = mapelSelect.value;
+        const mapelNama = mapelSelect.options[mapelSelect.selectedIndex]?.text.split(' - ')[1] || '';
+        const kelasId = kelasSelect.value;
+        const nama = namaTugasInput.value.trim();
+        const tenggat = tenggatInput.value;
+        const skorMaksimal = parseInt(skorMaksimalInput.value);
+
+        if (!guruId) { alert("Pilih guru!"); return; }
+        if (!mapelKode) { alert("Pilih mapel!"); return; }
+        if (!kelasId) { alert("Pilih kelas!"); return; }
+        if (!nama) { alert("Nama tugas harus diisi!"); return; }
+
+        try {
+            await addDoc(collection(db, "penugasan"), {
+                guruId, mapelKode, mapelNama, kelasId, nama,
+                tenggat: tenggat || null,
+                skorMaksimal: skorMaksimal || 100,
+                createdAt: new Date().toISOString()
+            });
+            namaTugasInput.value = '';
+            tenggatInput.value = '';
+            skorMaksimalInput.value = '100';
+            alert("Tugas berhasil ditambahkan!");
+            loadTugas();
+        } catch (error) {
+            alert("Gagal menambah tugas: " + error.message);
+        }
+    }
+
+    // ==================== EDIT TUGAS ====================
+    async function saveEdit() {
+        if (!currentEditingId) return;
+        try {
+            await updateDoc(doc(db, "penugasan", currentEditingId), {
+                nama: editNamaTugas.value,
+                tenggat: editTenggat.value || null,
+                skorMaksimal: parseInt(editSkorMaksimal.value)
+            });
+            editModal.style.display = 'none';
+            loadTugas();
+        } catch (error) {
+            alert("Gagal menyimpan: " + error.message);
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
+    }
+
+    // ==================== AUTH & INIT ====================
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) { window.location.href = 'index.html'; return; }
+        if (user.email !== "teknikotomasiindustri.nepan@gmail.com") { window.location.href = 'dashboard_guru.html'; return; }
+        
+        authStatus.style.display = 'none';
+        mainContent.style.display = 'block';
+        await loadGuru();
+        await loadKelas();
+        await loadTugas();
+    });
+
+    tambahTugasBtn.addEventListener('click', tambahTugas);
+    saveEditBtn.addEventListener('click', saveEdit);
+    cancelEditBtn.addEventListener('click', () => editModal.style.display = 'none');
+    closeModalBtns.forEach(btn => btn.addEventListener('click', () => editModal.style.display = 'none'));
+</script>
+</body>
+</html>
