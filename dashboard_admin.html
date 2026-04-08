@@ -35,6 +35,10 @@
         .menu-card p { font-size: 0.8rem; color: #6c86a0; }
         .footer-note { text-align: center; margin-top: 40px; font-size: 0.7rem; color: #6c86a0; background: #f6fafd; padding: 12px; border-radius: 24px; }
         .loading-screen { display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 1.2rem; color: #2c7a4d; }
+        @media (max-width: 700px) {
+            .menu-grid { grid-template-columns: 1fr; }
+            .header { flex-direction: column; text-align: center; }
+        }
     </style>
 </head>
 <body>
@@ -55,6 +59,10 @@
                 <div class="menu-card" data-link="absensekelas.html"><div class="menu-icon"><i class="fas fa-chart-line"></i></div><h3>Rekap Absensi Kelas</h3><p>Lihat rekap kehadiran siswa</p></div>
                 <div class="menu-card" data-link="pengaturanminggu.html"><div class="menu-icon"><i class="fas fa-calendar-week"></i></div><h3>Pengaturan Minggu</h3><p>Atur tanggal awal dan rentang minggu</p></div>
                 <div class="menu-card" data-link="tampilan_jadwal.html"><div class="menu-icon"><i class="fas fa-eye"></i></div><h3>Tampilan Jadwal Kelas</h3><p>Lihat jadwal semua kelas</p></div>
+                <!-- MENU BARU: Penugasan -->
+                <div class="menu-card" data-link="penugasan.html"><div class="menu-icon"><i class="fas fa-tasks"></i></div><h3>Manajemen Penugasan</h3><p>Buat dan kelola tugas per mapel & kelas</p></div>
+                <!-- MENU BARU: Penilaian Tugas -->
+                <div class="menu-card" data-link="nilaitugas.html"><div class="menu-icon"><i class="fas fa-star"></i></div><h3>Penilaian Tugas</h3><p>Input nilai tugas siswa</p></div>
             </div>
             <div class="footer-note"><i class="fas fa-shield-alt"></i> Sistem Manajemen Teaching Factory</div>
         </div>
