@@ -137,7 +137,7 @@
             padding: 6px 8px;
             font-size: 0.8rem;
             border-radius: 20px;
-            max-width: 130px;
+            max-width: 100px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -191,7 +191,7 @@
     </h1>
     <div class="sub">Menampilkan jadwal mingguan siswa untuk mata pelajaran dari kelompok <strong>"Produktif TOI"</strong> (pilih kode mapel)</div>
 
-    <div id="authStatus" class="loading">⏳ Menghubungkan ke Firebase...</div>
+    <div id="authStatus" class="loading">⏳ Memeriksa akses...</div>
 
     <div id="mainContent" style="display: none;">
         <!-- Pilih Kelas & Kontrol Minggu -->
@@ -249,14 +249,14 @@
         </div>
         <div class="footer-note">
             💡 <strong>Petunjuk:</strong> Pilih kelas yang memiliki mata pelajaran Produktif TOI. Untuk setiap siswa, pilih kode mapel dari dropdown per minggu. Perubahan akan langsung disimpan. <br>
-            📥 <strong>Impor CSV:</strong> Gunakan template CSV (tombol Template CSV) dengan kolom: <code>No, Nama Siswa, Minggu 1, Minggu 2, ...</code>. Isi dengan kode mapel yang terdaftar di halaman Guru.
+            📥 <strong>Impor CSV:</strong> Gunakan template CSV (tombol Template CSV) dengan kolom: <code>No, Nama Siswa, Minggu 1, Minggu 2, ...</code>. Isi dengan kode mapel yang terdaftar di halaman Guru. Pastikan nama siswa sama persis dengan data di sistem.
         </div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, doc, getDocs, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -289,89 +289,103 @@
     let kelasValid = [];
     let currentKelasId = null;
     let currentJumlahMinggu = 11;
-    let daftarKodeMapel = [];      // array of { kode, namaMapel, kelompok } - hanya kode untuk dropdown
+    let daftarKodeMapel = [];      // array of { kode, namaMapel, kelompok }
     let siswaList = [];             // [{ id, no, nama }]
     let jadwalSiswaMap = new Map(); // key: siswaId, value: object minggu { "1": kodeMapel, ... }
 
     // ==================== AMBIL DAFTAR KODE MAPEL PRODUKTIF TOI ====================
     async function loadKodeMapelProduktifTOI() {
-        const guruSnapshot = await getDocs(collection(db, "guru"));
-        const mapelSet = new Map(); // key: kode, value: { kode, namaMapel, kelompok }
-        
-        guruSnapshot.forEach(doc => {
-            const mapels = doc.data().mapel || [];
-            mapels.forEach(item => {
-                if (item.kelompok === "Produktif TOI" && item.mapel && item.mapel.trim() !== "") {
-                    const kode = item.kode || item.mapel.substring(0, 3).toUpperCase();
-                    if (!mapelSet.has(kode)) {
-                        mapelSet.set(kode, {
-                            kode: kode,
-                            namaMapel: item.mapel,
-                            kelompok: item.kelompok
-                        });
+        try {
+            const guruSnapshot = await getDocs(collection(db, "guru"));
+            const mapelSet = new Map();
+            
+            guruSnapshot.forEach(doc => {
+                const mapels = doc.data().mapel || [];
+                mapels.forEach(item => {
+                    if (item.kelompok === "Produktif TOI" && item.mapel && item.mapel.trim() !== "") {
+                        const kode = item.kode || item.mapel.substring(0, 3).toUpperCase();
+                        if (!mapelSet.has(kode)) {
+                            mapelSet.set(kode, {
+                                kode: kode,
+                                namaMapel: item.mapel,
+                                kelompok: item.kelompok
+                            });
+                        }
                     }
-                }
+                });
             });
-        });
-        
-        // Konversi ke array dan urutkan berdasarkan kode
-        daftarKodeMapel = Array.from(mapelSet.values()).sort((a, b) => a.kode.localeCompare(b.kode));
-        return daftarKodeMapel;
+            
+            daftarKodeMapel = Array.from(mapelSet.values()).sort((a, b) => a.kode.localeCompare(b.kode));
+            return daftarKodeMapel;
+        } catch (error) {
+            console.error("Error loading mapel:", error);
+            return [];
+        }
     }
 
     // ==================== AMBIL KELAS DENGAN PRODUKTIF TOI ====================
     async function loadKelasWithProduktifTOI() {
-        const kelasSnapshot = await getDocs(collection(db, "kelas"));
-        let kelasTemp = [];
-        kelasSnapshot.forEach(doc => {
-            kelasTemp.push({ id: doc.id, nama: doc.data().nama });
-        });
-        kelasTemp.sort((a, b) => a.nama.localeCompare(b.nama, 'id', { sensitivity: 'base' }));
+        try {
+            const kelasSnapshot = await getDocs(collection(db, "kelas"));
+            let kelasTemp = [];
+            kelasSnapshot.forEach(doc => {
+                kelasTemp.push({ id: doc.id, nama: doc.data().nama });
+            });
+            kelasTemp.sort((a, b) => a.nama.localeCompare(b.nama, 'id', { sensitivity: 'base' }));
 
-        const kelasValidTemp = [];
-        for (const kelas of kelasTemp) {
-            const jadwalRef = doc(db, "jadwal", kelas.id);
-            const jadwalSnap = await getDoc(jadwalRef);
-            let hasProduktif = false;
-            if (jadwalSnap.exists()) {
-                const schedule = jadwalSnap.data().schedule || {};
-                const hariList = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
-                for (let hari of hariList) {
-                    const daySchedule = schedule[hari];
-                    if (daySchedule) {
-                        for (let jp = 1; jp <= 10; jp++) {
-                            if (daySchedule[jp] === "Produktif TOI") {
-                                hasProduktif = true;
-                                break;
+            const kelasValidTemp = [];
+            for (const kelas of kelasTemp) {
+                const jadwalRef = doc(db, "jadwal", kelas.id);
+                const jadwalSnap = await getDoc(jadwalRef);
+                let hasProduktif = false;
+                if (jadwalSnap.exists()) {
+                    const schedule = jadwalSnap.data().schedule || {};
+                    const hariList = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
+                    for (let hari of hariList) {
+                        const daySchedule = schedule[hari];
+                        if (daySchedule) {
+                            for (let jp = 1; jp <= 10; jp++) {
+                                if (daySchedule[jp] === "Produktif TOI") {
+                                    hasProduktif = true;
+                                    break;
+                                }
                             }
                         }
+                        if (hasProduktif) break;
                     }
-                    if (hasProduktif) break;
                 }
+                if (hasProduktif) kelasValidTemp.push(kelas);
             }
-            if (hasProduktif) kelasValidTemp.push(kelas);
+            return kelasValidTemp;
+        } catch (error) {
+            console.error("Error loading kelas:", error);
+            return [];
         }
-        return kelasValidTemp;
     }
 
     // ==================== AMBIL SISWA DARI KELAS ====================
     async function loadSiswaByKelas(kelasId) {
-        const siswaRef = collection(db, "kelas", kelasId, "siswa");
-        const siswaSnapshot = await getDocs(siswaRef);
-        let siswa = [];
-        siswaSnapshot.forEach(doc => {
-            siswa.push({
-                id: doc.id,
-                no: doc.data().no,
-                nama: doc.data().nama
+        try {
+            const siswaRef = collection(db, "kelas", kelasId, "siswa");
+            const siswaSnapshot = await getDocs(siswaRef);
+            let siswa = [];
+            siswaSnapshot.forEach(doc => {
+                siswa.push({
+                    id: doc.id,
+                    no: doc.data().no,
+                    nama: doc.data().nama
+                });
             });
-        });
-        siswa.sort((a, b) => a.no - b.no);
-        return siswa;
+            siswa.sort((a, b) => a.no - b.no);
+            return siswa;
+        } catch (error) {
+            console.error("Error loading siswa:", error);
+            return [];
+        }
     }
 
     // ==================== AMBIL JADWAL SISWA ====================
-    async function loadJadwalSiswa(kelasId, siswaIdList) {
+    async function loadJadwalSiswa(siswaIdList) {
         const jadwalMap = new Map();
         for (const siswaId of siswaIdList) {
             const jadwalRef = doc(db, "jadwalSiswa", siswaId);
@@ -398,7 +412,7 @@
             if (kodeMapel === "") {
                 delete existing[mingguKe];
             } else {
-                existing[mingguKe] = kodeMapel;  // simpan hanya kode mapel
+                existing[mingguKe] = kodeMapel;
             }
             await setDoc(jadwalRef, { minggu: existing, kelasId: currentKelasId }, { merge: true });
         } catch (error) {
@@ -407,14 +421,14 @@
         }
     }
 
-    // ==================== RENDER TABEL (dengan dropdown kode mapel) ====================
+    // ==================== RENDER TABEL ====================
     function renderTable() {
         if (!currentKelasId || siswaList.length === 0) {
             tableBody.innerHTML = '<tr><td colspan="2">Tidak ada siswa di kelas ini</td></tr>';
             return;
         }
 
-        // Build header
+        // Header
         let headerHtml = '<tr><th>No</th><th>Nama Siswa</th>';
         for (let i = 1; i <= currentJumlahMinggu; i++) {
             headerHtml += `<th>Minggu ${i}</th>`;
@@ -422,13 +436,13 @@
         headerHtml += '</tr>';
         tableHeader.innerHTML = headerHtml;
 
-        // Buat opsi dropdown (hanya kode mapel)
+        // Options dropdown
         let optionsHtml = '<option value="">-- Pilih --</option>';
         daftarKodeMapel.forEach(item => {
             optionsHtml += `<option value="${escapeHtml(item.kode)}">${escapeHtml(item.kode)}</option>`;
         });
 
-        // Build body
+        // Body
         let bodyHtml = '';
         for (const siswa of siswaList) {
             const siswaId = siswa.id;
@@ -444,7 +458,7 @@
                 }
                 bodyHtml += `
                     <td>
-                        <select class="mapel-select" data-siswa-id="${siswaId}" data-minggu="${i}" style="max-width:100px;">
+                        <select class="mapel-select" data-siswa-id="${siswaId}" data-minggu="${i}">
                             ${optionsHtml}
                             ${selectedHtml}
                         </select>
@@ -455,13 +469,14 @@
         }
         tableBody.innerHTML = bodyHtml;
 
-        // Attach event listener untuk setiap dropdown
+        // Event listener dropdown
         document.querySelectorAll('.mapel-select').forEach(select => {
             select.addEventListener('change', async (e) => {
                 const siswaId = select.getAttribute('data-siswa-id');
                 const minggu = parseInt(select.getAttribute('data-minggu'));
                 const kodeMapel = select.value;
                 await simpanJadwalSiswa(siswaId, minggu, kodeMapel);
+                
                 if (!jadwalSiswaMap.has(siswaId)) jadwalSiswaMap.set(siswaId, {});
                 const current = jadwalSiswaMap.get(siswaId);
                 if (kodeMapel === "") delete current[minggu];
@@ -471,7 +486,7 @@
         });
     }
 
-    // ==================== MUAT DATA UNTUK KELAS ====================
+    // ==================== MUAT DATA KELAS ====================
     async function loadDataForKelas(kelasId, jumlahMinggu) {
         if (!kelasId) return;
         currentKelasId = kelasId;
@@ -487,7 +502,7 @@
             }
 
             const siswaIds = siswaList.map(s => s.id);
-            jadwalSiswaMap = await loadJadwalSiswa(kelasId, siswaIds);
+            jadwalSiswaMap = await loadJadwalSiswa(siswaIds);
             renderTable();
         } catch (error) {
             console.error("Error load data kelas:", error);
@@ -497,22 +512,26 @@
 
     // ==================== POPULATE DROPDOWN KELAS ====================
     async function populateKelasSelect() {
-        kelasValid = await loadKelasWithProduktifTOI();
-        kelasSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>';
-        if (kelasValid.length === 0) {
-            kelasSelect.innerHTML = '<option value="">Tidak ada kelas dengan Produktif TOI</option>';
-            tableBody.innerHTML = '<tr><td colspan="2">Tidak ada kelas yang memiliki kelompok Produktif TOI.</td></tr>';
-            return;
-        }
-        kelasValid.forEach(kelas => {
-            const option = document.createElement('option');
-            option.value = kelas.id;
-            option.textContent = kelas.nama;
-            kelasSelect.appendChild(option);
-        });
-        if (kelasValid.length > 0) {
-            kelasSelect.value = kelasValid[0].id;
-            await loadDataForKelas(kelasValid[0].id, currentJumlahMinggu);
+        try {
+            kelasValid = await loadKelasWithProduktifTOI();
+            kelasSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+            if (kelasValid.length === 0) {
+                kelasSelect.innerHTML = '<option value="">Tidak ada kelas dengan Produktif TOI</option>';
+                tableBody.innerHTML = '<tr><td colspan="2">Tidak ada kelas yang memiliki kelompok Produktif TOI.</td></tr>';
+                return;
+            }
+            kelasValid.forEach(kelas => {
+                const option = document.createElement('option');
+                option.value = kelas.id;
+                option.textContent = kelas.nama;
+                kelasSelect.appendChild(option);
+            });
+            if (kelasValid.length > 0) {
+                kelasSelect.value = kelasValid[0].id;
+                await loadDataForKelas(kelasValid[0].id, currentJumlahMinggu);
+            }
+        } catch (error) {
+            console.error("Error populate kelas:", error);
         }
     }
 
@@ -629,7 +648,6 @@
                         if (mingguIdx !== -1 && fields.length > mingguIdx) {
                             const kode = fields[mingguIdx];
                             if (kode) {
-                                // Validasi apakah kode ada di daftar kode mapel
                                 const isValid = daftarKodeMapel.some(item => item.kode === kode);
                                 if (isValid) {
                                     mingguData[m] = kode;
@@ -665,10 +683,12 @@
                 return;
             }
             let updatedCount = 0;
+            let notFoundCount = 0;
             for (const imp of importedData) {
                 const siswa = siswaList.find(s => s.nama.toLowerCase() === imp.nama.toLowerCase());
                 if (!siswa) {
                     console.warn(`Siswa "${imp.nama}" tidak ditemukan di kelas ini.`);
+                    notFoundCount++;
                     continue;
                 }
                 let currentMinggu = jadwalSiswaMap.get(siswa.id) || {};
@@ -680,7 +700,11 @@
                 jadwalSiswaMap.set(siswa.id, currentMinggu);
                 updatedCount++;
             }
-            alert(`Berhasil mengimpor ${updatedCount} siswa.`);
+            let message = `Berhasil mengimpor ${updatedCount} siswa.`;
+            if (notFoundCount > 0) {
+                message += ` ${notFoundCount} siswa tidak ditemukan (nama tidak cocok).`;
+            }
+            alert(message);
             renderTable();
             csvImportFile.value = "";
         } catch (err) {
@@ -729,21 +753,21 @@
         });
     }
 
-    // ==================== AUTH ====================
+    // ==================== AUTH (HANYA ADMIN) ====================
     onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            authStatus.style.display = 'none';
-            mainContent.style.display = 'block';
-            await loadKodeMapelProduktifTOI();
-            await populateKelasSelect();
-        } else {
-            authStatus.innerHTML = '🔄 Melakukan login anonim...';
-            signInAnonymously(auth).catch((error) => {
-                console.error("Gagal login anonim:", error);
-                authStatus.innerHTML = '❌ Gagal terhubung ke Firebase. Pastikan autentikasi anonim diaktifkan.';
-                authStatus.style.color = 'red';
-            });
+        if (!user) {
+            window.location.href = 'index.html';
+            return;
         }
+        if (user.email !== "teknikotomasiindustri.nepan@gmail.com") {
+            window.location.href = 'dashboard_guru.html';
+            return;
+        }
+        // Admin, tampilkan halaman
+        authStatus.style.display = 'none';
+        mainContent.style.display = 'block';
+        await loadKodeMapelProduktifTOI();
+        await populateKelasSelect();
     });
 </script>
 </body>
