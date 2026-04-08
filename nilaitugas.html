@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penilaian Tugas - Teknik Otomasi Industri</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #eef2f8; padding: 30px 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 32px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding: 28px 32px; }
+        h1 { font-size: 1.7rem; color: #1a4a6f; margin-bottom: 6px; display: flex; align-items: center; gap: 12px; }
+        .sub { color: #5a6e7c; margin-bottom: 28px; border-left: 4px solid #2c7a4d; padding-left: 16px; }
+        .card { background: #f9fbfd; border-radius: 24px; padding: 20px 24px; margin-bottom: 28px; border: 1px solid #e2edf2; }
+        .info-bar { background: #eef4fa; padding: 16px 20px; border-radius: 20px; margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 24px; }
+        .info-item { display: flex; align-items: center; gap: 12px; }
+        .table-wrapper { overflow-x: auto; border-radius: 20px; border: 1px solid #e2edf2; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th, td { padding: 12px; border-bottom: 1px solid #ecf3f8; text-align: left; }
+        th { background: #eef4fa; font-weight: 700; color: #1e4a6e; }
+        .nilai-input { width: 80px; padding: 8px; border-radius: 20px; border: 1px solid #cfdfea; text-align: center; }
+        button { background: #2c7a4d; color: white; border: none; padding: 10px 24px; border-radius: 28px; font-weight: 600; cursor: pointer; }
+        .btn-save { background: #2c7a4d; }
+        .btn-outline { background: transparent; border: 1px solid #2c7a4d; color: #2c7a4d; }
+        .loading { text-align: center; padding: 40px; color: #6c86a0; }
+        .footer-note { margin-top: 24px; font-size: 0.7rem; text-align: center; color: #6c86a0; }
+        @media (max-width:700px) { .container { padding: 18px; } .nilai-input { width: 60px; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1><i class="fas fa-star"></i> Penilaian Tugas</h1>
+    <div class="sub" id="infoTugas">Memuat informasi tugas...</div>
+
+    <div id="loadingState" class="loading"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>
+
+    <div id="mainContent" style="display: none;">
+        <div class="info-bar">
+            <div class="info-item"><i class="fas fa-chalkboard-user"></i> <strong id="guruInfo">-</strong></div>
+            <div class="info-item"><i class="fas fa-book"></i> <strong id="mapelInfo">-</strong></div>
+            <div class="info-item"><i class="fas fa-school"></i> <strong id="kelasInfo">-</strong></div>
+            <div class="info-item"><i class="fas fa-tasks"></i> <strong id="tugasInfo">-</strong></div>
+            <div class="info-item"><i class="fas fa-chart-line"></i> Skor Maks: <strong id="skorMaksInfo">100</strong></div>
+        </div>
+
+        <div class="card">
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>No</th><th>Nama Siswa</th><th>Nilai</th><th>Aksi</th></tr></thead>
+                    <tbody id="siswaTbody"></tbody>
+                </table>
+            </div>
+            <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:12px;">
+                <button id="saveAllBtn" class="btn-save"><i class="fas fa-save"></i> Simpan Semua</button>
+                <button id="backBtn" class="btn-outline"><i class="fas fa-arrow-left"></i> Kembali</button>
+            </div>
+        </div>
+    </div>
+    <div class="footer-note">💡 Masukkan nilai sesuai skor maksimal. Nilai akan tersimpan otomatis per siswa.</div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, doc, getDocs, getDoc, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDKR4e_9uHBhBqQEdxR7s2R807fawb7J8Y",
+        authDomain: "absensi-toi.firebaseapp.com",
+        projectId: "absensi-toi",
+        storageBucket: "absensi-toi.firebasestorage.app",
+        messagingSenderId: "1069310497322",
+        appId: "1:1069310497322:web:2705d66e041c41a1626953"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // Ambil parameter URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const tugasId = urlParams.get('tugasId');
+    const guruId = urlParams.get('guruId');
+    const mapelKode = urlParams.get('mapel');
+    const kelasId = urlParams.get('kelasId');
+    const namaTugas = decodeURIComponent(urlParams.get('namaTugas') || '');
+
+    let siswaList = [];
+    let nilaiMap = new Map(); // key: siswaId, value: nilai
+    let skorMaksimal = 100;
+
+    // DOM
+    const loadingState = document.getElementById('loadingState');
+    const mainContent = document.getElementById('mainContent');
+    const guruInfo = document.getElementById('guruInfo');
+    const mapelInfo = document.getElementById('mapelInfo');
+    const kelasInfo = document.getElementById('kelasInfo');
+    const tugasInfo = document.getElementById('tugasInfo');
+    const skorMaksInfo = document.getElementById('skorMaksInfo');
+    const siswaTbody = document.getElementById('siswaTbody');
+    const saveAllBtn = document.getElementById('saveAllBtn');
+    const backBtn = document.getElementById('backBtn');
+
+    // ==================== LOAD DATA ====================
+    async function loadData() {
+        if (!tugasId) {
+            alert("Tugas tidak ditemukan!");
+            window.location.href = 'penugasan.html';
+            return;
+        }
+
+        // Load info tugas
+        const tugasRef = doc(db, "penugasan", tugasId);
+        const tugasSnap = await getDoc(tugasRef);
+        if (!tugasSnap.exists()) {
+            alert("Tugas tidak ditemukan!");
+            window.location.href = 'penugasan.html';
+            return;
+        }
+        const tugas = tugasSnap.data();
+        skorMaksimal = tugas.skorMaksimal || 100;
+        skorMaksInfo.textContent = skorMaksimal;
+
+        // Load guru
+        const guruRef = doc(db, "guru", tugas.guruId);
+        const guruSnap = await getDoc(guruRef);
+        guruInfo.textContent = guruSnap.exists() ? guruSnap.data().nama : tugas.guruId;
+
+        mapelInfo.textContent = `${tugas.mapelKode} - ${tugas.mapelNama}`;
+        tugasInfo.textContent = tugas.nama;
+
+        // Load kelas
+        const kelasRef = doc(db, "kelas", tugas.kelasId);
+        const kelasSnap = await getDoc(kelasRef);
+        kelasInfo.textContent = kelasSnap.exists() ? kelasSnap.data().nama : tugas.kelasId;
+
+        // Load siswa
+        const siswaRef = collection(db, "kelas", tugas.kelasId, "siswa");
+        const siswaSnap = await getDocs(siswaRef);
+        siswaList = [];
+        siswaSnap.forEach(doc => {
+            siswaList.push({ id: doc.id, no: doc.data().no, nama: doc.data().nama });
+        });
+        siswaList.sort((a,b) => a.no - b.no);
+
+        // Load nilai yang sudah ada
+        const nilaiQuery = query(collection(db, "nilai_tugas"), where("tugasId", "==", tugasId));
+        const nilaiSnap = await getDocs(nilaiQuery);
+        nilaiSnap.forEach(doc => {
+            const data = doc.data();
+            nilaiMap.set(data.siswaId, data.nilai);
+        });
+
+        renderTable();
+        loadingState.style.display = 'none';
+        mainContent.style.display = 'block';
+    }
+
+    // ==================== RENDER TABEL ====================
+    function renderTable() {
+        if (siswaList.length === 0) {
+            siswaTbody.innerHTML = '<tr><td colspan="4">Tidak ada siswa di kelas ini</td></tr>';
+            return;
+        }
+        let html = '';
+        siswaList.forEach((siswa, idx) => {
+            const nilai = nilaiMap.get(siswa.id) || '';
+            html += `<tr data-siswa-id="${siswa.id}">
+                <td>${siswa.no}</td>
+                <td><strong>${escapeHtml(siswa.nama)}</strong></td>
+                <td><input type="number" class="nilai-input" data-siswa-id="${siswa.id}" value="${nilai}" min="0" max="${skorMaksimal}" step="1"></td>
+                <td><button class="save-single" data-siswa-id="${siswa.id}">💾 Simpan</button></td>
+            </tr>`;
+        });
+        siswaTbody.innerHTML = html;
+
+        // Event listener per siswa
+        document.querySelectorAll('.save-single').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const siswaId = btn.dataset.siswaId;
+                const input = document.querySelector(`.nilai-input[data-siswa-id="${siswaId}"]`);
+                const nilai = parseInt(input.value) || 0;
+                await simpanNilai(siswaId, nilai);
+                alert(`Nilai untuk ${siswaList.find(s => s.id === siswaId)?.nama} disimpan!`);
+            });
+        });
+
+        // Auto-save on input change (opsional)
+        document.querySelectorAll('.nilai-input').forEach(input => {
+            input.addEventListener('change', async (e) => {
+                const siswaId = input.dataset.siswaId;
+                const nilai = parseInt(input.value) || 0;
+                await simpanNilai(siswaId, nilai);
+            });
+        });
+    }
+
+    // ==================== SIMPAN NILAI ====================
+    async function simpanNilai(siswaId, nilai) {
+        const docId = `${siswaId}_${tugasId}`;
+        const nilaiRef = doc(db, "nilai_tugas", docId);
+        await setDoc(nilaiRef, {
+            siswaId: siswaId,
+            tugasId: tugasId,
+            nilai: Math.min(nilai, skorMaksimal),
+            updatedAt: new Date().toISOString()
+        }, { merge: true });
+        nilaiMap.set(siswaId, nilai);
+    }
+
+    // ==================== SIMPAN SEMUA ====================
+    async function saveAll() {
+        const inputs = document.querySelectorAll('.nilai-input');
+        for (const input of inputs) {
+            const siswaId = input.dataset.siswaId;
+            const nilai = parseInt(input.value) || 0;
+            await simpanNilai(siswaId, nilai);
+        }
+        alert("Semua nilai berhasil disimpan!");
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
+    }
+
+    // ==================== AUTH & INIT ====================
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) { window.location.href = 'index.html'; return; }
+        // Guru dan admin bisa mengakses halaman ini
+        await loadData();
+    });
+
+    saveAllBtn.addEventListener('click', saveAll);
+    backBtn.addEventListener('click', () => {
+        window.location.href = 'penugasan.html';
+    });
+</script>
+</body>
+</html>
